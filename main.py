@@ -3,12 +3,15 @@ import sys
 
 # --- FFmpeg Setup ---
 if os.name == "nt":
+    # 1. Local Windows setup
     FFMPEG_WIN_PATH = r"C:\Users\Akshita\AppData\Local\Microsoft\WinGet\Packages\Gyan.FFmpeg_Microsoft.Winget.Source_8wekyb3d8bbwe\ffmpeg-9.0.2-full_build\bin"
     if os.path.exists(FFMPEG_WIN_PATH):
         os.environ["PATH"] += os.pathsep + FFMPEG_WIN_PATH
 else:
+    # 2. Render/Linux setup
     import imageio_ffmpeg
-    os.environ["PATH"] += os.pathsep + os.path.dirname(imageio_ffmpeg.get_ffmpeg_exe())
+    ffmpeg_path = imageio_ffmpeg.get_ffmpeg_exe()
+    os.environ["PATH"] += os.pathsep + os.path.dirname(ffmpeg_path)
 
 import io
 import traceback
@@ -19,6 +22,12 @@ from fastapi import FastAPI, UploadFile, File, Form, HTTPException
 from fastapi.responses import JSONResponse, RedirectResponse, FileResponse
 from fastapi.staticfiles import StaticFiles
 from pydub import AudioSegment
+
+# Tell Pydub exactly where FFmpeg is (Fixes the Render audio conversion issue)
+if os.name != "nt":
+    AudioSegment.converter = ffmpeg_path
+    AudioSegment.ffmpeg = ffmpeg_path
+    AudioSegment.ffprobe = ffmpeg_path
 
 load_dotenv()
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
@@ -158,7 +167,6 @@ async def process_negotiation(
                 try: os.remove(path)
                 except: pass
 
-        # Tell Gnani TTS which language to use for the voice
         tts_lang = "en-IN" if lang == "english" else "hi-IN"
         
         tts_counter = synthesize_speech(text=speech_script, output_path="counter_response.wav", voice=config.DEFAULT_VOICE, lang_code=tts_lang)
