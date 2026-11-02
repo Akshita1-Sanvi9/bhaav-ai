@@ -106,7 +106,7 @@ async def process_negotiation(
         is_fair = quoted <= fair 
         overcharge_pct = int(((quoted - fair) / fair) * 100) if fair > 0 else 0
 
-        # --- GENERATE SCRIPTS (Language Aware) ---
+        # --- GENERATE SCRIPTS (Language Aware & Female Voice Grammar) ---
         if is_fair:
             status = "FAIR PRICE"
             whisper_advice = f"Quoted Rs.{quoted}. Fair estimate Rs.{fair}. This is a good price, accept it."
@@ -137,7 +137,8 @@ async def process_negotiation(
                     script_pool = [
                         f"Bhaiya, {quoted} rupaye toh bahut zyada hai. {counter} me dena hai toh bolo.",
                         f"Arre bhaiya, market rate check karo. {counter} rupaye me final karo.",
-                        f"Pichhle hafte {counter} me mila tha. Aaj bhi wahi rate do."
+                        f"Pichhle hafte {counter} me mila tha. Aaj bhi wahi rate do.",
+                        f"Main regular customer hoon bhaiya, {counter} me de do toh aaj le jaati hoon."
                     ]
                 speech_script = random.choice(script_pool)
                 
@@ -145,16 +146,16 @@ async def process_negotiation(
                 if lang == "english":
                     speech_script = f"Let's compromise. I can go up to Rs.{counter}, final."
                 elif lang == "hindi":
-                    speech_script = f"चलो भैया, मैं थोड़ा बढ़ा के बोलता हूँ। {counter} रुपये में फाइनल कर दो।"
+                    speech_script = f"चलो भैया, मैं थोड़ा बढ़ा के बोलती हूँ। {counter} रुपये में फाइनल कर दो।"
                 else:
-                    speech_script = f"Chalo bhaiya, main thoda badha ke bolta hoon. {counter} me final kar do."
+                    speech_script = f"Chalo bhaiya, main thoda badha ke bolti hoon. {counter} me final kar do."
             else:
                 if lang == "english":
                     speech_script = f"This is my final offer: Rs.{counter}. Take it or leave it."
                 elif lang == "hindi":
                     speech_script = f"देखो भैया, मेरा लास्ट ऑफर है। {counter} रुपये में दे दो।"
                 else:
-                    speech_script = f"Dekho bhaiya, mera last offer hai. {counter} me de do."
+                    speech_script = f"Dekho bhaiya, mera last offer hai. {counter} me de do, warna main chali jaungi."
 
         response_payload = {
             "transcript": transcript, "item": item, "quoted_price": quoted,
