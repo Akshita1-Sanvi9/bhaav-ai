@@ -38,9 +38,10 @@
                 <div class="flex-grow border-t border-slate-800"></div>
             </div>
 
-            <div class="flex gap-2 mt-2">
-                <input type="text" id="textInput" placeholder="e.g. Aloo 50 rupaye kilo hai" class="flex-1 bg-slate-950 border border-slate-800 rounded-lg px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-amber-500/50 focus:border-amber-500 text-slate-200 transition">
-                <button onclick="sendText()" class="bg-amber-500 hover:bg-amber-400 text-slate-950 px-5 py-3 rounded-lg font-bold text-sm transition-colors">Negotiate</button>
+            <!-- FIXED MOBILE ALIGNMENT HERE -->
+            <div class="flex gap-2 mt-2 w-full">
+                <input type="text" id="textInput" placeholder="e.g. Aloo 50 rupaye kilo hai" class="flex-1 min-w-0 bg-slate-950 border border-slate-800 rounded-lg px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-amber-500/50 focus:border-amber-500 text-slate-200 transition">
+                <button onclick="sendText()" class="bg-amber-500 hover:bg-amber-400 text-slate-950 px-4 sm:px-6 py-3 rounded-lg font-bold text-sm whitespace-nowrap transition-colors flex-shrink-0">Negotiate</button>
             </div>
         </div>
 
@@ -69,7 +70,7 @@
                 </div>
             </div>
 
-            <!-- In-Ear Whisper with NEW Speaker Button -->
+            <!-- In-Ear Whisper with Speaker Button -->
             <div class="bg-slate-950/50 border border-slate-800 rounded-lg p-3 flex items-start justify-between">
                 <div class="flex items-start space-x-3 pr-2">
                     <i class="fas fa-headset text-amber-400 mt-0.5"></i>
@@ -78,8 +79,7 @@
                         <p id="whisperAdvice" class="text-xs text-slate-300 mt-0.5 leading-relaxed">...</p>
                     </div>
                 </div>
-                <!-- Button to play the whisper -->
-                <button id="playWhisperBtn" class="hidden text-slate-400 hover:text-amber-400 transition-colors bg-slate-800 p-2 rounded-full h-8 w-8 flex items-center justify-center">
+                <button id="playWhisperBtn" class="hidden text-slate-400 hover:text-amber-400 transition-colors bg-slate-800 p-2 rounded-full h-8 w-8 flex items-center justify-center flex-shrink-0">
                     <i class="fas fa-volume-up text-sm"></i>
                 </button>
             </div>
@@ -142,10 +142,18 @@
         }
 
         async function sendAudio() {
-            const audioBlob = new Blob(audioChunks, { type: 'audio/webm' });
-            currentInputType = 'audio'; currentInputData = audioBlob; negotiationRound = 1;
+            // Detect the actual format the browser recorded in (webm or mp4)
+            const mimeType = mediaRecorder.mimeType || 'audio/webm';
+            const extension = mimeType.includes('mp4') ? 'mp4' : 'webm';
+            const audioBlob = new Blob(audioChunks, { type: mimeType });
+            
+            currentInputType = 'audio'; 
+            currentInputData = audioBlob; 
+            negotiationRound = 1;
+            
             const formData = new FormData();
-            formData.append('file', audioBlob); formData.append('round_number', negotiationRound);
+            formData.append('file', audioBlob, `audio.${extension}`); 
+            formData.append('round_number', negotiationRound);
             submitNegotiation(formData);
         }
 
@@ -208,7 +216,6 @@
                     };
                 }
 
-                // NEW: Wire up the Whisper audio button
                 if (data.whisper_tts_available) {
                     const whisperBtn = document.getElementById('playWhisperBtn');
                     whisperBtn.classList.remove('hidden');
