@@ -5,7 +5,12 @@ import sys
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 import config
 
-def synthesize_speech(text: str, output_path: str = "counter_response.wav", voice: str = None) -> str:
+def synthesize_speech(
+    text: str, 
+    output_path: str = "counter_response.wav", 
+    voice: str = None,
+    lang_code: str = None  # <-- Added this parameter
+) -> str:
     """
     Sends synthesized negotiation dialogue to Gnani's Timbre v2.5 TTS API 
     and saves the output audio to a WAV file.
@@ -20,6 +25,8 @@ def synthesize_speech(text: str, output_path: str = "counter_response.wav", voic
     default_speed = getattr(config, "DEFAULT_SPEED", 1.0)
 
     selected_voice = voice if voice else default_voice
+    # Use the passed language, or fall back to default
+    selected_lang = lang_code if lang_code else default_lang
 
     headers = {
         "Content-Type": "application/json",
@@ -30,7 +37,7 @@ def synthesize_speech(text: str, output_path: str = "counter_response.wav", voic
         "text": text,
         "voice": selected_voice,
         "model": "timbre-v2.5",
-        "language": default_lang,
+        "language": selected_lang,  # <-- Using the dynamic language
         "speed": default_speed,
         "audio_config": {
             "sample_rate": sample_rate,
