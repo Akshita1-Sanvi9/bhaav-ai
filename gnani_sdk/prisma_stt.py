@@ -5,7 +5,7 @@ import sys
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 import config
 
-def transcribe_audio(audio_file_path: str, lang_code: str = "hi-IN") -> str:
+def transcribe_audio(audio_file_path: str, lang_code: str = None) -> str:
     if not os.path.exists(audio_file_path):
         raise FileNotFoundError(f"Audio file not found at: {audio_file_path}")
 
@@ -13,11 +13,14 @@ def transcribe_audio(audio_file_path: str, lang_code: str = "hi-IN") -> str:
         "X-API-Key-ID": config.GNANI_API_KEY
     }
 
-    # v3 API payload. We use hi-IN because Prisma is trained on Hinglish code-switching.
+    # v3 API payload. 
+    # If lang_code is None, we omit it to let the API auto-detect.
     payload = {
-        "language_code": lang_code,
         "format": "transcribe"
     }
+    
+    if lang_code:
+        payload["language_code"] = lang_code
 
     try:
         with open(audio_file_path, "rb") as audio_file:
