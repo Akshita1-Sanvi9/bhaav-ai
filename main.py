@@ -94,7 +94,10 @@ def process_negotiation(
     text_input: str = Form(None),
     round_number: int = Form(1),
     selected_lang: str = Form("hinglish"),
-    negotiation_mode: str = Form("unsure")
+    negotiation_mode: str = Form("unsure"),
+    locked_quoted: int = Form(None),
+    locked_fair: int = Form(None),
+    locked_base_counter: int = Form(None)
 ):
     try:
         cleanup_old_audio()
@@ -139,13 +142,21 @@ def process_negotiation(
             raise HTTPException(status_code=400, detail="Couldn't find a price in that sentence.")
 
         # --- 3. MATH LOGIC ---
+        
+        # Force the locked prices if this is a compromise round
+        if round_number > 1:
+            if locked_quoted is not None: quoted = locked_quoted
+            if locked_fair is not None: fair = locked_fair
+            if locked_base_counter is not None: base_counter = locked_base_counter
+            
         if round_number == 1:
             counter = base_counter
             whisper_advice = result.get("whisper_advice", "")
             speech_script = result.get("speech_script", "")
             status = result.get("status", "OVERCHARGED")
             
-        elif result.get("status") == "DELUSIONAL":
+        elif result.get("status") == "DELUSIONAL" or (fair > 0 and quoted < (fair * 0.1)):
+            # Do not compromise on a joke price
             counter = base_counter
             status = "DELUSIONAL"
             if lang == "hindi":
@@ -160,18 +171,35 @@ def process_negotiation(
                 
         else:
             # Compromise Rounds (2+)
+            speech_script = ""
+            whisper_advice = ""
+            
             if fair <= 0: fair = int(quoted * 0.8)
             
-            # SMOOTH MATH: Move towards the fair price
-            gap = fair - base_counter
-            if round_number == 2:
-                counter = base_counter + int(gap * 0.33) 
-            elif round_number == 3:
-                counter = base_counter + int(gap * 0.66) 
-            else:
-                counter = fair 
+            # We now safely use the LOCKED base_counter from Round 1
+            prev_counter = base_counter
             
+            # Calculate a smooth step towards the fair price
+            if prev_counter >= fair:
+                counter = fair
+            else:
+                gap = fair - prev_counter
+                if round_number == 2:
+                    counter = prev_counter + max(1, int(gap * 0.25)) 
+                elif round_number == 3:
+                    counter = prev_counter + max(1, int(gap * 0.50)) 
+                elif round_number == 4:
+                    counter = prev_counter + max(1, int(gap * 0.75))
+                else:
+                    counter = fair 
+            
+            # Hard guard: Never exceed the vendor's quote, never decrease from previous
             counter = min(quoted, counter)
+            
+            # If the math somehow drops below the locked counter, force it up
+            if counter < base_counter:
+                counter = base_counter
+                
             status = "OVERCHARGED"
             
             # DYNAMIC SCRIPT GENERATION FOR COMPROMISE
@@ -180,14 +208,15 @@ def process_negotiation(
                 if api_key:
                     compromise_prompt = f"""You are Bhaav-AI, an expert Indian street negotiator. 
                     The vendor quoted ₹{quoted}. The fair price is ₹{fair}. 
-                    We are in round {round_number} of negotiation. The user is now willing to pay ₹{counter}.
+                    We are in round {round_number} of negotiation. 
+                    The user's previous counter-offer was ₹{base_counter}. The user is now increasing their limit to ₹{counter}.
                     
                     CRITICAL RULES:
                     1. The selected language is '{lang}'. Write the 'speech_script' and 'whisper_advice' strictly in '{lang}'.
                     2. Speak like a real Indian street customer. Use casual slang (e.g., "Bhaiya", "Mehnga hai", "Final karo"). NEVER use formal words like "agree", "accept", "deal", or "situation".
                     3. DO NOT use the word "offer".
-                    4. speech_script: MUST be a full, natural sentence (12-15 words). It should sound like you are compromising but still pushing for a good deal.
-                    5. whisper_advice: Include the prices like "Quoted ₹X, Fair ₹Y, Counter ₹{counter}." Followed by a short strategy.
+                    4. speech_script: MUST be a full, natural sentence (12-15 words). Frame it as: "I am increasing my price from {base_counter} to {counter} because I really want it, but {counter} is my absolute final limit."
+                    5. whisper_advice: Include the prices like "Quoted ₹{quoted}, Fair ₹{fair}, Counter ₹{counter}." Followed by a short strategy.
                     
                     Return ONLY a JSON object: {{"speech_script": "...", "whisper_advice": "..."}}"""
                     

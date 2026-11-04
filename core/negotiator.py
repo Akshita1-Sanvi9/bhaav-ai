@@ -125,18 +125,15 @@ def evaluate_dynamic_negotiation(transcript: str, forced_lang: str = "hinglish",
                 # 3. Strict Language Validation
                 if forced_lang == "hindi":
                     if re.search(r'[a-zA-Z]', speech_script) or re.search(r'[a-zA-Z]', whisper_advice):
-                        print("[FIX] LLM leaked English into Hindi. Forcing fallback.")
                         speech_script = ""
                         whisper_advice = ""
                 elif forced_lang == "english":
                     hinglish_words = ["bhaiya", "hai", "ka", "ki", "ko", "me", "kar", "do", "rupaye", "zyada", "kam", "final"]
                     if any(word in speech_script.lower().split() for word in hinglish_words) or re.search(r'[\u0900-\u097F]', speech_script) or re.search(r'[\u0900-\u097F]', whisper_advice):
-                        print("[FIX] LLM leaked Hindi/Hinglish into English. Forcing fallback.")
                         speech_script = ""
                         whisper_advice = ""
                 elif forced_lang == "hinglish":
                     if not re.search(r'[a-zA-Z]', speech_script):
-                        print("[FIX] LLM used pure Hindi instead of Hinglish. Forcing fallback.")
                         speech_script = ""
                         whisper_advice = ""
 
@@ -158,16 +155,18 @@ def evaluate_dynamic_negotiation(transcript: str, forced_lang: str = "hinglish",
              }
 
     # THE ULTIMATE DELUSIONAL GUARD
-    # If the quote is less than 10% of the fair price, it's a joke (e.g., Car for ₹2)
+    is_delusional = False
+    
+    # If the quote is less than 10% of the fair price, it's a joke (e.g., Car for ₹200)
     if quoted < (fair * 0.1):
-        status = "DELUSIONAL"
-        fair = quoted * 100000 
+        is_delusional = True
+        fair = max(quoted * 100, 100000) 
         counter = fair
     
     # If the quote is way higher than fair (e.g., Toothbrush for ₹5 Lakhs)
-    elif quoted > (fair * 4):
-        status = "DELUSIONAL"
-        fair = quoted * 0.1
+    elif quoted > (fair * 5) and quoted > 1000:
+        is_delusional = True
+        fair = int(quoted * 0.05)
         counter = fair
         
     else:
@@ -187,48 +186,49 @@ def evaluate_dynamic_negotiation(transcript: str, forced_lang: str = "hinglish",
     overcharge_pct = int(((quoted - fair) / fair) * 100) if fair > 0 and quoted > fair else 0
     item_display = f"{item_en} ({item_hi})" if forced_lang == "hindi" and item_en.lower() != item_hi.lower() else item_en
 
-    # Fallback if LLM fails or uses "offer" or formal words or language mismatch
-    bad_words = ["offer", "accept", "deal", "situation"]
-    if not speech_script or any(word in speech_script.lower() for word in bad_words) or not whisper_advice:
-        if status == "DELUSIONAL":
-            if forced_lang == "hindi":
-                whisper_advice = f"Quoted ₹{quoted}, Fair ₹{fair}. ये दाम पागलपन है, मत लो।"
-                speech_script = f"भैया, ₹{quoted} में तो कोई नहीं देगा। इसका सही रेट ₹{fair} है। मैं थोड़ा और देख लेता हूँ।"
-            elif forced_lang == "english":
-                whisper_advice = f"Quoted ₹{quoted}, Fair ₹{fair}. This is absurd, walk away."
-                speech_script = f"Brother, ₹{quoted} is a joke. The actual price is around ₹{fair}. I'll look elsewhere."
-            else:
-                whisper_advice = f"Quoted ₹{quoted}, Fair ₹{fair}. Yeh price toh mazaak hai, mat lo."
-                speech_script = f"Bhaiya, ₹{quoted} toh bahut hi zyada hai. Iska sahi rate ₹{fair} hai. Main aage se dekhta hoon."
+    # 1. FORCE DELUSIONAL OVERRIDE (Completely ignores LLM text)
+    if is_delusional:
+        status = "DELUSIONAL"
+        if forced_lang == "hindi":
+            whisper_advice = f"Quoted ₹{quoted}, Fair ₹{fair}. ये दाम पागलपन है, मत लो।"
+            speech_script = f"भैया, ₹{quoted}? मज़ाक कर रहे हो क्या? ये तो ₹{fair} का मिलता है। मैं नहीं लूंगा।"
+        elif forced_lang == "english":
+            whisper_advice = f"Quoted ₹{quoted}, Fair ₹{fair}. This is absurd, walk away."
+            speech_script = f"Brother, ₹{quoted}? Are you joking? This is worth around ₹{fair}. I'm not paying this."
         else:
-            tactic = random.choice(["compare", "budget", "round"])
-            
-            if forced_lang == "hindi":
-                if tactic == "compare":
-                    speech_script = f"भैया, ये तो बहुत ज़्यादा है। मैंने बगल वाली दुकान पर ₹{counter} में देखा है। थोड़ा कम करो।"
-                elif tactic == "budget":
-                    speech_script = f"भैया, आपका सामान अच्छा है, लेकिन मेरा बजट सिर्फ ₹{counter} है। इसी में दे दो।"
-                else:
-                    speech_script = f"भैया, ₹{quoted} में तो बहुत मंहगा पड़ रहा है। चलो ₹{counter} में राउंड फिगर कर दो।"
-                whisper_advice = f"Quoted ₹{quoted}, Fair ₹{fair}. Counter ₹{counter}. बगल वाले से कम दाम माँगो।"
-                
-            elif forced_lang == "english":
-                if tactic == "compare":
-                    speech_script = f"Brother, this is too expensive. The shop next door is selling the same item for ₹{counter}. Can you match that?"
-                elif tactic == "budget":
-                    speech_script = f"Brother, I really like this item, but my budget is only ₹{counter}. Can we make it work?"
-                else:
-                    speech_script = f"Brother, ₹{quoted} is a bit high for me. Let's make it a round figure at ₹{counter} and close the deal."
-                whisper_advice = f"Quoted ₹{quoted}, Fair ₹{fair}. Counter ₹{counter}. Be firm but polite."
-                
+            whisper_advice = f"Quoted ₹{quoted}, Fair ₹{fair}. Yeh price toh mazaak hai, mat lo."
+            speech_script = f"Bhaiya, ₹{quoted}? Mazaak kar rahe ho kya? Yeh toh ₹{fair} ka milta hai. Main nahi lunga."
+
+    # 2. NORMAL FALLBACK
+    elif not speech_script or "offer" in speech_script.lower() or not whisper_advice:
+        tactic = random.choice(["compare", "budget", "round"])
+        
+        if forced_lang == "hindi":
+            if tactic == "compare":
+                speech_script = f"भैया, ये तो बहुत ज़्यादा है। मैंने बगल वाली दुकान पर ₹{counter} में देखा है। थोड़ा कम करो।"
+            elif tactic == "budget":
+                speech_script = f"भैया, आपका सामान अच्छा है, लेकिन मेरा बजट सिर्फ ₹{counter} है। इसी में दे दो।"
             else:
-                if tactic == "compare":
-                    speech_script = f"Bhaiya, yeh toh zyada lag raha hai. Maine bagal wali dukaan pe ₹{counter} me dekha hai. Thoda kam karo."
-                elif tactic == "budget":
-                    speech_script = f"Bhaiya, saman achha hai, par mera budget sirf ₹{counter} hai. Isi me de do, aage bhi lenge."
-                else:
-                    speech_script = f"Bhaiya, ₹{quoted} thoda zyada lag raha hai. Chalo ₹{counter} me round figure kar do, abhi le jaata hoon."
-                whisper_advice = f"Quoted ₹{quoted}, Fair ₹{fair}. Counter ₹{counter}. Use comparison and be willing to walk away."
+                speech_script = f"भैया, ₹{quoted} में तो बहुत मंहगा पड़ रहा है। चलो ₹{counter} में राउंड फिगर कर दो।"
+            whisper_advice = f"Quoted ₹{quoted}, Fair ₹{fair}. Counter ₹{counter}. बगल वाले से कम दाम माँगो।"
+            
+        elif forced_lang == "english":
+            if tactic == "compare":
+                speech_script = f"Brother, this is too expensive. The shop next door is selling the same item for ₹{counter}. Can you match that?"
+            elif tactic == "budget":
+                speech_script = f"Brother, I really like this item, but my budget is only ₹{counter}. Can we make it work?"
+            else:
+                speech_script = f"Brother, ₹{quoted} is a bit high for me. Let's make it a round figure at ₹{counter} and close the deal."
+            whisper_advice = f"Quoted ₹{quoted}, Fair ₹{fair}. Counter ₹{counter}. Be firm but polite."
+            
+        else:
+            if tactic == "compare":
+                speech_script = f"Bhaiya, yeh toh zyada lag raha hai. Maine bagal wali dukaan pe ₹{counter} me dekha hai. Thoda kam karo."
+            elif tactic == "budget":
+                speech_script = f"Bhaiya, saman achha hai, par mera budget sirf ₹{counter} hai. Isi me de do, aage bhi lenge."
+            else:
+                speech_script = f"Bhaiya, ₹{quoted} thoda zyada lag raha hai. Chalo ₹{counter} me round figure kar do, abhi le jaata hoon."
+            whisper_advice = f"Quoted ₹{quoted}, Fair ₹{fair}. Counter ₹{counter}. Use comparison and be willing to walk away."
 
     if str(quoted) not in whisper_advice:
         whisper_advice = f"Quoted ₹{quoted}, Fair ₹{fair}. " + whisper_advice

@@ -203,6 +203,9 @@
         let mediaRecorder, audioChunks = [], isRecording = false;
         let currentAudio = null, negotiationRound = 1, currentInputType = null, currentInputData = null;
         let currentMode = 'unsure'; 
+        
+        // CRITICAL FIX: Global lock variables to prevent LLM hallucination drops
+        let globalQuoted = 0, globalFair = 0, globalCounter = 0; 
 
         function checkInput() {
             const val = document.getElementById('textInput').value.trim();
@@ -215,12 +218,14 @@
                 container.classList.add('hidden');
                 container.classList.remove('flex');
             }
+
+            // Reset the round only when the user is entering a genuinely new quote
+            negotiationRound = 1;
         }
 
         function setMode(mode) {
             const subMenu = document.getElementById('unsureSubMenu');
             const tip = document.getElementById('modeTip');
-            const mainModes = document.getElementById('mainModes');
 
             if (mode === 'unsure') {
                 subMenu.classList.remove('hidden');
@@ -290,7 +295,6 @@
 
         function processAudio() {
             const mimeType = mediaRecorder.mimeType || 'audio/webm';
-            const extension = mimeType.includes('mp4') ? 'mp4' : 'webm';
             const audioBlob = new Blob(audioChunks, { type: mimeType });
             
             currentInputType = 'audio'; 
@@ -323,7 +327,6 @@
                 if (!txt.trim()) return;
                 currentInputType = 'text';
                 currentInputData = txt;
-                negotiationRound = 1;
             }
 
             const selectedLang = document.getElementById('langSelect').value;
@@ -340,11 +343,25 @@
             formData.append('round_number', negotiationRound);
             formData.append('selected_lang', selectedLang);
             formData.append('negotiation_mode', currentMode);
+            
+            // CRITICAL FIX: Send locked values if this is a compromise round
+            if (negotiationRound > 1) {
+                formData.append('locked_quoted', globalQuoted);
+                formData.append('locked_fair', globalFair);
+                formData.append('locked_base_counter', globalCounter);
+            }
 
             try {
                 const res = await fetch('/api/negotiate', { method: 'POST', body: formData });
                 const data = await res.json();
                 if (!res.ok) throw new Error(data.detail || 'Server error');
+
+                // CRITICAL FIX: Save these values on Round 1 so they never change
+                if (negotiationRound === 1) {
+                    globalQuoted = data.quoted_price;
+                    globalFair = data.fair_price;
+                    globalCounter = data.counter_offer;
+                }
 
                 actionBtn.innerHTML = '<i class="fas fa-check-circle"></i> Negotiation Complete';
                 
@@ -355,19 +372,14 @@
                 card.classList.add('reveal');
 
                 document.getElementById('detectedItem').innerText = data.item + (negotiationRound > 1 ? ` (Round ${negotiationRound})` : "");
-                document.getElementById('quotedPrice').innerText = '₹' + data.quoted_price;
-                document.getElementById('fairPrice').innerText = '₹' + data.fair_price;
-                document.getElementById('counterOffer').innerText = '₹' + data.counter_offer;
+                document.getElementById('quotedPrice').innerText = '₹' + (data.quoted_price ?? '—');
+                document.getElementById('fairPrice').innerText = '₹' + (data.fair_price ?? '—');
+                document.getElementById('counterOffer').innerText = '₹' + (data.counter_offer ?? '—');
                 document.getElementById('whisperAdvice').innerText = data.whisper_advice;
                 document.getElementById('speechScript').innerText = '"' + data.speech_script + '"';
                 
                 const badge = document.getElementById('statusBadge');
-                
-                // THE UI DELUSIONAL FIX
-                if (data.quoted_price < 100 && data.fair_price > 1000) {
-                    badge.className = 'px-3 py-1.5 text-[10px] uppercase tracking-widest font-extrabold rounded-lg bg-rose-600/20 text-rose-500 border-rose-500/50 shadow-[0_0_15px_rgba(244,63,94,0.3)]';
-                    badge.innerText = 'Delusional Price';
-                } else if (data.status === "FAIR PRICE" || data.overcharge_pct <= 0) {
+                if (data.status === "FAIR") {
                     badge.className = 'px-3 py-1.5 text-[10px] uppercase tracking-widest font-extrabold rounded-lg bg-emerald-500/10 text-emerald-400 border-emerald-500/30 shadow-[0_0_15px_rgba(16,185,129,0.15)]';
                     badge.innerText = 'Fair Price';
                 } else if (data.status === "DELUSIONAL") {
@@ -390,7 +402,7 @@
                     whisperBtn.onclick = () => { currentAudio = new Audio(data.whisper_audio_url); currentAudio.play(); };
                 }
 
-                if (data.status !== "FAIR PRICE" && data.status !== "DELUSIONAL" && data.overcharge_pct > 0) {
+                if (data.status !== "FAIR" && data.status !== "DELUSIONAL" && data.overcharge_pct > 0) {
                     document.getElementById('negotiateAgainBtn').classList.remove('hidden');
                 }
 
@@ -429,6 +441,8 @@
             currentInputType = null;
             currentInputData = null;
             negotiationRound = 1;
+            globalQuoted = 0; globalFair = 0; globalCounter = 0; // Reset locks
+            
             if (currentAudio) { currentAudio.pause(); currentAudio = null; }
             
             document.getElementById('outputCard').classList.add('hidden');
