@@ -225,7 +225,7 @@
             if (mode === 'unsure') {
                 subMenu.classList.remove('hidden');
                 subMenu.classList.add('flex');
-                currentMode = 'unsure'; // Wait for sub-choice
+                currentMode = 'unsure';
                 return;
             }
             
@@ -233,13 +233,11 @@
             subMenu.classList.remove('flex');
             currentMode = mode;
 
-            // Reset styles
             ['fair', 'unsure', 'unfair'].forEach(m => {
                 const el = document.getElementById(`mode-${m}`);
                 if(el) el.className = 'flex-1 py-2 text-[11px] font-bold rounded-lg transition-all text-slate-400 hover:text-white text-center';
             });
             
-            // Highlight active
             if (mode === 'fair') {
                 document.getElementById('mode-fair').className = 'flex-1 py-2 text-[11px] font-bold rounded-lg transition-all bg-white/10 text-white shadow-sm border border-white/5 text-center ring-2 ring-amber-500/50';
                 tip.innerText = "Minimal bargaining. Good for already fair prices.";
@@ -364,7 +362,12 @@
                 document.getElementById('speechScript').innerText = '"' + data.speech_script + '"';
                 
                 const badge = document.getElementById('statusBadge');
-                if (data.status === "FAIR PRICE" || data.overcharge_pct <= 0) {
+                
+                // THE UI DELUSIONAL FIX
+                if (data.quoted_price < 100 && data.fair_price > 1000) {
+                    badge.className = 'px-3 py-1.5 text-[10px] uppercase tracking-widest font-extrabold rounded-lg bg-rose-600/20 text-rose-500 border-rose-500/50 shadow-[0_0_15px_rgba(244,63,94,0.3)]';
+                    badge.innerText = 'Delusional Price';
+                } else if (data.status === "FAIR PRICE" || data.overcharge_pct <= 0) {
                     badge.className = 'px-3 py-1.5 text-[10px] uppercase tracking-widest font-extrabold rounded-lg bg-emerald-500/10 text-emerald-400 border-emerald-500/30 shadow-[0_0_15px_rgba(16,185,129,0.15)]';
                     badge.innerText = 'Fair Price';
                 } else if (data.status === "DELUSIONAL") {
@@ -433,7 +436,6 @@
             document.getElementById('actionContainer').classList.add('hidden');
             document.getElementById('actionContainer').classList.remove('flex');
             
-            // Reset mode sub-menu
             document.getElementById('unsureSubMenu').classList.add('hidden');
             document.getElementById('unsureSubMenu').classList.remove('flex');
             

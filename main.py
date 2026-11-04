@@ -8,6 +8,9 @@ import subprocess
 import tempfile
 import shutil
 import time
+import requests
+import json
+import random
 
 from dotenv import load_dotenv
 from fastapi import FastAPI, UploadFile, File, Form, HTTPException
@@ -124,7 +127,6 @@ def process_negotiation(
         if not transcript or not transcript.strip():
             raise HTTPException(status_code=400, detail="No speech detected.")
 
-        # The negotiator returns the base counter, script, and whisper for Round 1
         result = evaluate_dynamic_negotiation(transcript, forced_lang=selected_lang, mode=negotiation_mode)
         
         quoted = to_int(result.get("quoted_price"))
@@ -144,7 +146,6 @@ def process_negotiation(
             status = result.get("status", "OVERCHARGED")
             
         elif result.get("status") == "DELUSIONAL":
-            # Do not compromise on a joke price
             counter = base_counter
             status = "DELUSIONAL"
             if lang == "hindi":
@@ -175,8 +176,6 @@ def process_negotiation(
             
             # DYNAMIC SCRIPT GENERATION FOR COMPROMISE
             try:
-                import requests
-                import json
                 api_key = os.getenv("GROQ_API_KEY")
                 if api_key:
                     compromise_prompt = f"""You are Bhaav-AI, an expert Indian street negotiator. 
@@ -207,21 +206,55 @@ def process_negotiation(
                         c_data = json.loads(res_c.json()["choices"][0]["message"]["content"])
                         speech_script = c_data.get("speech_script", "")
                         whisper_advice = c_data.get("whisper_advice", "")
-                        print(f"[COMPROMISE LLM] -> {c_data}")
+                        
+                        # STRICT LANGUAGE VALIDATION FOR COMPROMISE
+                        if lang == "hindi":
+                            if re.search(r'[a-zA-Z]', speech_script) or re.search(r'[a-zA-Z]', whisper_advice):
+                                speech_script = ""
+                                whisper_advice = ""
+                        elif lang == "english":
+                            hinglish_words = ["bhaiya", "hai", "ka", "ki", "ko", "me", "kar", "do", "rupaye", "zyada", "kam", "final"]
+                            if any(word in speech_script.lower().split() for word in hinglish_words) or re.search(r'[\u0900-\u097F]', speech_script) or re.search(r'[\u0900-\u097F]', whisper_advice):
+                                speech_script = ""
+                                whisper_advice = ""
+                        elif lang == "hinglish":
+                            if not re.search(r'[a-zA-Z]', speech_script) or re.search(r'[\u0900-\u097F]', speech_script):
+                                speech_script = ""
+                                whisper_advice = ""
+                                
             except Exception as e:
-                print(f"[COMPROMISE LLM FAILED]: {e}")
+                pass
 
             # Python Fallback if LLM fails
-            if not speech_script or "offer" in speech_script.lower():
+            if not speech_script:
+                tactic = random.choice(["compare", "budget", "round"])
+                
                 if lang == "english":
-                    whisper_advice = f"Quoted ₹{quoted}, Fair ₹{fair}. Compromise to ₹{counter}."
-                    speech_script = f"Let's compromise. I can go up to ₹{counter}, final."
+                    if tactic == "compare":
+                        speech_script = f"Brother, I really want to buy this, but I saw it for ₹{counter} at another shop. Can you match that?"
+                    elif tactic == "budget":
+                        speech_script = f"Brother, I'll be honest, my budget is only ₹{counter}. Let's close the deal at this price."
+                    else:
+                        speech_script = f"Brother, let's compromise. I'll pay ₹{counter} right now, cash. Final price?"
+                    whisper_advice = f"Quoted ₹{quoted}, Fair ₹{fair}. Counter ₹{counter}. Be firm and ready to walk away."
+                    
                 elif lang == "hindi":
-                    whisper_advice = f"Quoted ₹{quoted}, Fair ₹{fair}. थोड़ा बढ़ा कर ₹{counter} बोलो।"
-                    speech_script = f"चलो भैया, मैं थोड़ा बढ़ा के बोलती हूँ। ₹{counter} रुपये में फाइनल कर दो।"
+                    if tactic == "compare":
+                        speech_script = f"भैया, मैं सच में ये खरीदना चाहता हूँ, लेकिन बगल वाले ₹{counter} में दे रहे हैं। आप भी कम करो ना।"
+                    elif tactic == "budget":
+                        speech_script = f"भैया, सच बता रहा हूँ, मेरा बजट सिर्फ ₹{counter} है। इसी में डील फाइनल कर दो।"
+                    else:
+                        speech_script = f"भैया, चलो ₹{counter} में फाइनल करते हैं। मैं अभी कैश देता हूँ, अंतिम दाम बताओ।"
+                    whisper_advice = f"Quoted ₹{quoted}, Fair ₹{fair}. Counter ₹{counter}. थोड़ा बढ़ा कर ₹{counter} बोलो।"
+                    
                 else:
-                    whisper_advice = f"Quoted ₹{quoted}, Fair ₹{fair}. Thoda badha ke ₹{counter} bolo."
-                    speech_script = f"Chalo bhaiya, main thoda badha ke bolti hoon. ₹{counter} me final kar do."
+                    if tactic == "compare":
+                        speech_script = f"Bhaiya, main sach me yeh lena chahta hoon, par bagal wale ₹{counter} me de rahe hain. Aap bhi thoda adjust karo."
+                    elif tactic == "budget":
+                        speech_script = f"Bhaiya, sach batau toh mera budget sirf ₹{counter} hai. Isi me final kar do, abhi cash de dunga."
+                    else:
+                        speech_script = f"Bhaiya, chalo ₹{counter} me final kar do. Round figure banao aur saman pack kar do."
+                    whisper_advice = f"Quoted ₹{quoted}, Fair ₹{fair}. Counter ₹{counter}. Thoda badha ke {counter} bolo."
 
         counter = min(quoted, counter)
         overcharge_pct = int(((quoted - fair) / fair) * 100) if fair > 0 and quoted > fair else 0
