@@ -6,133 +6,58 @@
     <title>Bhaav-AI | Negotiate Smarter</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
     
     <style>
-        body { 
-            font-family: 'Outfit', sans-serif; 
-            background-color: #050505; 
-            color: #ffffff;
-            overflow-x: hidden;
-            margin: 0;
-        }
-
-        /* --- DYNAMIC MESH BACKGROUND --- */
-        .mesh-bg {
-            position: fixed;
-            top: 0; left: 0; width: 100vw; height: 100vh;
-            z-index: -2;
-            background: radial-gradient(circle at 15% 50%, rgba(245, 158, 11, 0.15), transparent 25%),
-                        radial-gradient(circle at 85% 30%, rgba(139, 92, 246, 0.15), transparent 25%);
-            animation: pulseMesh 10s infinite alternate;
-        }
-
-        @keyframes pulseMesh {
-            0% { transform: scale(1); opacity: 0.7; }
-            100% { transform: scale(1.1); opacity: 1; }
-        }
-
-        /* --- FLOATING PARTICLES --- */
-        .particles {
-            position: fixed;
-            top: 0; left: 0; width: 100vw; height: 100vh;
-            z-index: -1;
-            pointer-events: none;
-        }
+        body { font-family: 'Outfit', sans-serif; background-color: #050505; color: #ffffff; overflow-x: hidden; margin: 0; }
         
-        .particle {
-            position: absolute;
-            background: rgba(255, 255, 255, 0.4);
-            border-radius: 50%;
-            box-shadow: 0 0 10px rgba(255, 255, 255, 0.2);
-            animation: floatUp linear infinite;
-        }
+        .mesh-bg { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; z-index: -2; background: radial-gradient(circle at 15% 50%, rgba(245, 158, 11, 0.15), transparent 25%), radial-gradient(circle at 85% 30%, rgba(139, 92, 246, 0.15), transparent 25%); animation: pulseMesh 10s infinite alternate; }
+        @keyframes pulseMesh { 0% { transform: scale(1); opacity: 0.7; } 100% { transform: scale(1.1); opacity: 1; } }
 
-        @keyframes floatUp {
-            0% { transform: translateY(100vh) scale(0); opacity: 0; }
-            20% { opacity: 1; }
-            80% { opacity: 1; }
-            100% { transform: translateY(-10vh) scale(1.5); opacity: 0; }
-        }
+        .particles { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; z-index: -1; pointer-events: none; }
+        .particle { position: absolute; background: rgba(255, 255, 255, 0.4); border-radius: 50%; box-shadow: 0 0 10px rgba(255, 255, 255, 0.2); animation: floatUp linear infinite; }
+        @keyframes floatUp { 0% { transform: translateY(100vh) scale(0); opacity: 0; } 20% { opacity: 1; } 80% { opacity: 1; } 100% { transform: translateY(-10vh) scale(1.5); opacity: 0; } }
 
-        /* --- ULTRA GLASS PANEL --- */
         .glass-panel {
             background: linear-gradient(135deg, rgba(255, 255, 255, 0.03), rgba(255, 255, 255, 0.01));
-            backdrop-filter: blur(20px);
-            -webkit-backdrop-filter: blur(20px);
-            border: 1px solid rgba(255, 255, 255, 0.05);
-            border-top: 1px solid rgba(255, 255, 255, 0.15);
-            border-left: 1px solid rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(24px); -webkit-backdrop-filter: blur(24px);
+            border: 1px solid rgba(255, 255, 255, 0.05); border-top: 1px solid rgba(255, 255, 255, 0.15);
             box-shadow: 0 30px 60px -15px rgba(0, 0, 0, 0.8), inset 0 1px 0 rgba(255,255,255,0.1);
         }
 
-        /* --- BUTTON GLOW --- */
-        .glow-btn {
-            background: linear-gradient(180deg, #fbbf24 0%, #f59e0b 100%);
-            box-shadow: 0 0 20px rgba(245, 158, 11, 0.4), inset 0 1px 0 rgba(255,255,255,0.4);
-            transition: all 0.3s ease;
-        }
-        .glow-btn:hover {
-            box-shadow: 0 0 30px rgba(245, 158, 11, 0.6), inset 0 1px 0 rgba(255,255,255,0.4);
-            transform: translateY(-1px);
-        }
-        .glow-btn:active {
-            transform: translateY(1px);
-        }
+        .glow-btn { background: linear-gradient(180deg, #fbbf24 0%, #f59e0b 100%); box-shadow: 0 0 25px rgba(245, 158, 11, 0.4), inset 0 1px 0 rgba(255,255,255,0.4); transition: all 0.3s ease; }
+        .glow-btn:hover { box-shadow: 0 0 35px rgba(245, 158, 11, 0.6); transform: translateY(-1px); }
+        .glow-btn:active { transform: translateY(1px); }
+        
+        .btn-dimmed { background: rgba(245, 158, 11, 0.15) !important; color: rgba(255,255,255,0.4) !important; box-shadow: none !important; border: 1px solid rgba(245, 158, 11, 0.1) !important; cursor: not-allowed; }
 
-        /* --- MIC GLOW --- */
-        .mic-orb {
-            background: radial-gradient(circle at 30% 30%, rgba(255,255,255,0.1), rgba(0,0,0,0.8));
-            box-shadow: 0 0 30px rgba(0, 0, 0, 0.8), inset 0 2px 5px rgba(255,255,255,0.2);
-            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
-        }
-        .mic-orb:hover {
-            box-shadow: 0 0 40px rgba(245, 158, 11, 0.3), inset 0 2px 5px rgba(255,255,255,0.2);
-            transform: scale(1.05);
-        }
+        .mic-orb { background: radial-gradient(circle at 30% 30%, rgba(255,255,255,0.1), rgba(0,0,0,0.8)); box-shadow: 0 0 30px rgba(0, 0, 0, 0.8), inset 0 2px 5px rgba(255,255,255,0.2); transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1); }
+        .mic-orb:hover { box-shadow: 0 0 40px rgba(245, 158, 11, 0.3); transform: scale(1.05); }
 
-        /* --- ANIMATIONS --- */
         .reveal { animation: reveal 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards; opacity: 0; transform: translateY(20px); }
         @keyframes reveal { to { opacity: 1; transform: translateY(0); } }
 
         .pulse-record { animation: pulseRecord 1.5s infinite; }
-        @keyframes pulseRecord {
-            0% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.6); background: #ef4444; }
-            70% { box-shadow: 0 0 0 30px rgba(239, 68, 68, 0); background: #dc2626; }
-            100% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0); background: #ef4444; }
-        }
+        @keyframes pulseRecord { 0% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.6); background: #ef4444; } 70% { box-shadow: 0 0 0 30px rgba(239, 68, 68, 0); background: #dc2626; } 100% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0); background: #ef4444; } }
 
-        /* Custom Select */
-        select {
-            appearance: none;
-            background-image: url("data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%22292.4%22%20height%3D%22292.4%22%3E%3Cpath%20fill%3D%22%23cbd5e1%22%20d%3D%22M287%2069.4a17.6%2017.6%200%200%200-13-5.4H18.4c-5%200-9.3%201.8-12.9%205.4A17.6%2017.6%200%200%200%200%2082.2c0%205%201.8%209.3%205.4%2012.9l128%20127.9c3.6%203.6%207.8%205.4%2012.8%205.4s9.2-1.8%2012.8-5.4L287%2095c3.5-3.5%205.4-7.8%205.4-12.8%200-5-1.9-9.2-5.5-12.8z%22%2F%3E%3C%2Fsvg%3E");
-            background-repeat: no-repeat;
-            background-position: right 0.7rem top 50%;
-            background-size: 0.6em auto;
-        }
+        select { appearance: none; background-image: url("data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%22292.4%22%20height%3D%22292.4%22%3E%3Cpath%20fill%3D%22%23cbd5e1%22%20d%3D%22M287%2069.4a17.6%2017.6%200%200%200-13-5.4H18.4c-5%200-9.3%201.8-12.9%205.4A17.6%2017.6%200%200%200%200%2082.2c0%205%201.8%209.3%205.4%2012.9l128%20127.9c3.6%203.6%207.8%205.4%2012.8%205.4s9.2-1.8%2012.8-5.4L287%2095c3.5-3.5%205.4-7.8%205.4-12.8%200-5-1.9-9.2-5.5-12.8z%22%2F%3E%3C%2Fsvg%3E"); background-repeat: no-repeat; background-position: right 0.7rem top 50%; background-size: 0.6em auto; }
     </style>
 </head>
 <body class="min-h-screen flex flex-col items-center justify-center p-4 selection:bg-amber-500/30">
 
-    <!-- Dynamic Backgrounds -->
     <div class="mesh-bg"></div>
     <div class="particles" id="particles"></div>
 
     <main class="w-full max-w-[420px] mx-auto space-y-6 relative z-10">
         
-        <!-- Header -->
         <header class="text-center mb-8 reveal">
             <div class="inline-flex items-center justify-center p-3 mb-4">
-                <!-- Indian Rupee Icon -->
                 <i class="fas fa-indian-rupee-sign text-3xl text-amber-400 drop-shadow-[0_0_15px_rgba(245,158,11,0.5)]"></i>
             </div>
             <h1 class="text-5xl font-bold tracking-tight text-white mb-2">Bhaav<span class="text-amber-500">AI</span></h1>
             <p class="text-[13px] text-slate-400 font-medium tracking-wide">NEGOTIATE SMARTER, NOT HARDER</p>
         </header>
 
-        <!-- Input Card -->
         <div class="glass-panel rounded-[2rem] p-7 reveal" style="animation-delay: 0.1s;">
             
             <div class="flex items-center justify-between mb-8">
@@ -151,7 +76,7 @@
                     <i class="fas fa-microphone text-slate-200 group-hover:text-white transition-colors duration-300" id="micIcon"></i>
                 </button>
             </div>
-            <p id="statusText" class="text-center text-[11px] font-semibold text-slate-500 mb-8 h-4 transition-colors">Tap to Record</p>
+            <p id="statusText" class="text-center text-[11px] font-semibold text-slate-500 mb-6 h-4 transition-colors">Tap to Record</p>
 
             <div class="flex items-center mb-6 opacity-60">
                 <div class="flex-grow border-t border-white/10"></div>
@@ -159,11 +84,40 @@
                 <div class="flex-grow border-t border-white/10"></div>
             </div>
 
-            <div class="flex flex-col gap-3 w-full">
-                <input type="text" id="textInput" placeholder="e.g. Aloo 50 rupaye kilo hai..." class="w-full bg-black/40 border border-white/10 rounded-xl px-5 py-4 text-sm focus:outline-none focus:border-amber-500/50 text-slate-100 transition-all placeholder-slate-600 shadow-inner">
-                <button onclick="sendText()" class="w-full glow-btn text-slate-950 py-4 rounded-xl font-bold text-[15px] active:scale-[0.98]">
-                    Negotiate
-                </button>
+            <div class="flex flex-col gap-4 w-full">
+                <input type="text" id="textInput" onkeyup="checkInput()" onpaste="checkInput()" placeholder="e.g. Aloo 50 rupaye kilo hai..." class="w-full bg-black/40 border border-white/10 rounded-xl px-5 py-4 text-sm focus:outline-none focus:border-amber-500/50 text-slate-100 transition-all placeholder-slate-600 shadow-inner">
+                
+                <!-- Mode Selection & Action Buttons -->
+                <div id="actionContainer" class="hidden flex-col gap-3 mt-2 transition-all duration-500">
+                    
+                    <!-- Mode Selector -->
+                    <div class="flex flex-col gap-1">
+                        <p class="text-[10px] text-amber-500 font-bold uppercase tracking-widest text-center mb-2">How does the price seem to you?</p>
+                        
+                        <!-- Initial 3 Options -->
+                        <div id="mainModes" class="flex bg-black/40 rounded-xl p-1.5 border border-white/10 shadow-inner">
+                            <button onclick="setMode('fair')" id="mode-fair" class="flex-1 py-2 text-[11px] font-bold rounded-lg transition-all text-slate-400 hover:text-white text-center">😌 Fair<br><span class="text-[9px] font-normal opacity-70">सही रेट</span></button>
+                            <button onclick="setMode('unsure')" id="mode-unsure" class="flex-1 py-2 text-[11px] font-bold rounded-lg transition-all bg-white/10 text-white shadow-sm border border-white/5 text-center">🤔 Unsure<br><span class="text-[9px] font-normal opacity-70">पता नहीं</span></button>
+                            <button onclick="setMode('unfair')" id="mode-unfair" class="flex-1 py-2 text-[11px] font-bold rounded-lg transition-all text-slate-400 hover:text-white text-center">😠 Unfair<br><span class="text-[9px] font-normal opacity-70">बहुत ज़्यादा</span></button>
+                        </div>
+
+                        <!-- Sub-menu for Unsure -->
+                        <div id="unsureSubMenu" class="hidden flex-col gap-2 mt-2">
+                            <p class="text-[10px] text-slate-400 text-center italic">Are you in a branded store or local market?</p>
+                            <div class="flex gap-2">
+                                <button onclick="setMode('unsure_branded')" class="flex-1 py-2 text-[11px] font-bold bg-white/5 border border-white/10 rounded-lg text-slate-300 hover:bg-white/10 transition-all">🏢 Branded Store</button>
+                                <button onclick="setMode('unsure_local')" class="flex-1 py-2 text-[11px] font-bold bg-white/5 border border-white/10 rounded-lg text-slate-300 hover:bg-white/10 transition-all">🏪 Local Market</button>
+                            </div>
+                        </div>
+
+                        <p id="modeTip" class="text-[10px] text-slate-500 text-center transition-all h-3 mt-2">Choose a strategy based on the quote.</p>
+                    </div>
+
+                    <!-- Action Button -->
+                    <button id="actionBtn" onclick="triggerNegotiation()" class="w-full glow-btn text-slate-950 py-4 rounded-xl font-bold text-[15px] flex items-center justify-center gap-2 transition-all mt-2">
+                        Start Negotiation
+                    </button>
+                </div>
             </div>
         </div>
 
@@ -179,21 +133,20 @@
             </div>
 
             <div class="grid grid-cols-3 gap-2.5 text-center">
-                <div class="bg-black/30 p-3.5 rounded-2xl border border-white/5 relative overflow-hidden group hover:bg-black/50 transition-colors">
+                <div class="bg-black/30 p-3.5 rounded-2xl border border-white/5 relative overflow-hidden">
                     <p class="text-[9px] font-bold text-slate-400 uppercase tracking-widest mb-1">Quoted</p>
                     <p id="quotedPrice" class="text-lg font-bold text-rose-400">-</p>
                 </div>
-                <div class="bg-black/30 p-3.5 rounded-2xl border border-white/5 relative overflow-hidden group hover:bg-black/50 transition-colors">
+                <div class="bg-black/30 p-3.5 rounded-2xl border border-white/5 relative overflow-hidden">
                     <p class="text-[9px] font-bold text-slate-400 uppercase tracking-widest mb-1">Fair Rate</p>
                     <p id="fairPrice" class="text-lg font-bold text-emerald-400">-</p>
                 </div>
-                <div class="bg-gradient-to-b from-amber-500/10 to-black/40 p-3.5 rounded-2xl border border-amber-500/20 relative overflow-hidden shadow-[inset_0_0_20px_rgba(245,158,11,0.05)]">
+                <div class="bg-gradient-to-b from-amber-500/10 to-black/40 p-3.5 rounded-2xl border border-amber-500/20 relative overflow-hidden">
                     <p class="text-[9px] font-bold text-amber-500 uppercase tracking-widest mb-1">Counter</p>
                     <p id="counterOffer" class="text-lg font-bold text-amber-400 drop-shadow-[0_0_8px_rgba(245,158,11,0.4)]">-</p>
                 </div>
             </div>
 
-            <!-- In-Ear Whisper -->
             <div class="bg-black/20 border border-white/5 rounded-2xl p-4 flex items-start justify-between">
                 <div class="flex items-start space-x-3 pr-2">
                     <div class="mt-0.5"><i class="fas fa-headset text-amber-500 text-sm"></i></div>
@@ -207,7 +160,6 @@
                 </button>
             </div>
 
-            <!-- Speak Back Script -->
             <div class="bg-gradient-to-br from-white/5 to-transparent border border-white/10 rounded-2xl p-5 shadow-[inset_0_1px_0_rgba(255,255,255,0.05)]">
                 <p class="text-[9px] font-bold text-amber-500 uppercase tracking-widest mb-2 flex items-center gap-1.5"><i class="fas fa-bolt"></i> Speak Back</p>
                 <p id="speechScript" class="text-[15px] font-medium text-amber-50 italic mb-5 leading-relaxed drop-shadow-sm">"..."</p>
@@ -221,9 +173,13 @@
                     </button>
                 </div>
             </div>
+
+            <!-- Reset Button -->
+            <button onclick="resetApp()" class="w-full mt-2 bg-white/5 hover:bg-white/10 border border-white/10 text-white font-bold py-3 rounded-xl text-xs transition-all flex items-center justify-center gap-2 active:scale-95">
+                <i class="fas fa-redo"></i> New Negotiation
+            </button>
         </div>
 
-        <!-- Error Box -->
         <div id="errorArea" class="hidden p-4 rounded-2xl bg-red-950/40 border border-red-900/50 text-red-300 text-xs font-medium backdrop-blur-md flex items-center gap-3 reveal">
             <i class="fas fa-exclamation-circle text-red-400 text-lg"></i>
             <p id="errorMessage"></p>
@@ -232,14 +188,12 @@
     </main>
 
     <script>
-        // Generate floating particles
         const particleContainer = document.getElementById('particles');
         for(let i=0; i<40; i++) {
             let p = document.createElement('div');
             p.className = 'particle';
             let size = Math.random() * 3 + 1;
-            p.style.width = size + 'px';
-            p.style.height = size + 'px';
+            p.style.width = size + 'px'; p.style.height = size + 'px';
             p.style.left = Math.random() * 100 + 'vw';
             p.style.animationDuration = (Math.random() * 10 + 10) + 's';
             p.style.animationDelay = Math.random() * 10 + 's';
@@ -248,6 +202,55 @@
 
         let mediaRecorder, audioChunks = [], isRecording = false;
         let currentAudio = null, negotiationRound = 1, currentInputType = null, currentInputData = null;
+        let currentMode = 'unsure'; 
+
+        function checkInput() {
+            const val = document.getElementById('textInput').value.trim();
+            const container = document.getElementById('actionContainer');
+            
+            if (val.length > 0) {
+                container.classList.remove('hidden');
+                container.classList.add('flex');
+            } else {
+                container.classList.add('hidden');
+                container.classList.remove('flex');
+            }
+        }
+
+        function setMode(mode) {
+            const subMenu = document.getElementById('unsureSubMenu');
+            const tip = document.getElementById('modeTip');
+            const mainModes = document.getElementById('mainModes');
+
+            if (mode === 'unsure') {
+                subMenu.classList.remove('hidden');
+                subMenu.classList.add('flex');
+                currentMode = 'unsure'; // Wait for sub-choice
+                return;
+            }
+            
+            subMenu.classList.add('hidden');
+            subMenu.classList.remove('flex');
+            currentMode = mode;
+
+            // Reset styles
+            ['fair', 'unsure', 'unfair'].forEach(m => {
+                const el = document.getElementById(`mode-${m}`);
+                if(el) el.className = 'flex-1 py-2 text-[11px] font-bold rounded-lg transition-all text-slate-400 hover:text-white text-center';
+            });
+            
+            // Highlight active
+            if (mode === 'fair') {
+                document.getElementById('mode-fair').className = 'flex-1 py-2 text-[11px] font-bold rounded-lg transition-all bg-white/10 text-white shadow-sm border border-white/5 text-center ring-2 ring-amber-500/50';
+                tip.innerText = "Minimal bargaining. Good for already fair prices.";
+            } else if (mode === 'unfair') {
+                document.getElementById('mode-unfair').className = 'flex-1 py-2 text-[11px] font-bold rounded-lg transition-all bg-white/10 text-white shadow-sm border border-white/5 text-center ring-2 ring-amber-500/50';
+                tip.innerText = "Aggressive bargaining. The price is too high.";
+            } else if (mode === 'unsure_branded' || mode === 'unsure_local') {
+                document.getElementById('mode-unsure').className = 'flex-1 py-2 text-[11px] font-bold rounded-lg transition-all bg-white/10 text-white shadow-sm border border-white/5 text-center ring-2 ring-amber-500/50';
+                tip.innerText = mode === 'unsure_branded' ? "Branded store: Tight margins." : "Local market: High margins.";
+            }
+        }
 
         async function toggleRecording() {
             const btn = document.getElementById('recordBtn'), icon = document.getElementById('micIcon'), status = document.getElementById('statusText');
@@ -259,7 +262,7 @@
                     mediaRecorder = new MediaRecorder(stream);
                     audioChunks = [];
                     mediaRecorder.ondataavailable = e => audioChunks.push(e.data);
-                    mediaRecorder.onstop = sendAudio;
+                    mediaRecorder.onstop = processAudio;
                     
                     mediaRecorder.start();
                     isRecording = true;
@@ -277,14 +280,17 @@
                 isRecording = false;
                 
                 btn.classList.remove('pulse-record');
-                icon.className = 'fas fa-spinner animate-spin text-amber-400';
-                status.innerText = 'Processing Audio...';
+                icon.className = 'fas fa-microphone text-slate-200 group-hover:text-white transition-colors duration-300';
+                status.innerText = 'Audio captured. Choose mode below.';
                 status.classList.remove('text-red-400');
                 status.classList.add('text-amber-400');
+                
+                document.getElementById('actionContainer').classList.remove('hidden');
+                document.getElementById('actionContainer').classList.add('flex');
             }
         }
 
-        async function sendAudio() {
+        function processAudio() {
             const mimeType = mediaRecorder.mimeType || 'audio/webm';
             const extension = mimeType.includes('mp4') ? 'mp4' : 'webm';
             const audioBlob = new Blob(audioChunks, { type: mimeType });
@@ -292,44 +298,19 @@
             currentInputType = 'audio'; 
             currentInputData = audioBlob; 
             negotiationRound = 1;
-            
-            const selectedLang = document.getElementById('langSelect').value;
-            const formData = new FormData();
-            formData.append('file', audioBlob, `audio.${extension}`); 
-            formData.append('round_number', negotiationRound);
-            formData.append('selected_lang', selectedLang);
-            submitNegotiation(formData);
         }
 
-        function sendText() {
-            const text = document.getElementById('textInput').value;
-            if (!text.trim()) return;
-            currentInputType = 'text'; currentInputData = text; negotiationRound = 1;
+        async function triggerNegotiation() {
+            const actionBtn = document.getElementById('actionBtn');
+            const originalText = actionBtn.innerHTML;
             
-            const selectedLang = document.getElementById('langSelect').value;
-            const formData = new FormData();
-            formData.append('text_input', text); 
-            formData.append('round_number', negotiationRound);
-            formData.append('selected_lang', selectedLang);
-            submitNegotiation(formData);
-        }
-
-        function negotiateAgain() {
-            if (!currentInputType || !currentInputData) return;
-            negotiationRound++;
+            actionBtn.classList.remove('glow-btn');
+            actionBtn.classList.add('btn-dimmed');
+            actionBtn.innerHTML = '<i class="fas fa-spinner animate-spin"></i> Negotiating...';
+            actionBtn.disabled = true;
             
-            const selectedLang = document.getElementById('langSelect').value;
-            const formData = new FormData();
-            if (currentInputType === 'text') formData.append('text_input', currentInputData);
-            else formData.append('file', currentInputData);
-            formData.append('round_number', negotiationRound);
-            formData.append('selected_lang', selectedLang);
-            submitNegotiation(formData);
-        }
-
-        async function submitNegotiation(formData) {
             const status = document.getElementById('statusText');
-            status.innerText = 'Negotiating...';
+            status.innerText = 'Processing...';
             status.classList.add('text-amber-400');
             
             document.getElementById('errorArea').classList.add('hidden');
@@ -339,11 +320,36 @@
 
             if (currentAudio) { currentAudio.pause(); currentAudio = null; }
 
+            if (currentInputType === 'text' || !currentInputType) {
+                const txt = document.getElementById('textInput').value;
+                if (!txt.trim()) return;
+                currentInputType = 'text';
+                currentInputData = txt;
+                negotiationRound = 1;
+            }
+
+            const selectedLang = document.getElementById('langSelect').value;
+            const formData = new FormData();
+            
+            if (currentInputType === 'text') {
+                formData.append('text_input', currentInputData); 
+            } else {
+                const mimeType = mediaRecorder.mimeType || 'audio/webm';
+                const extension = mimeType.includes('mp4') ? 'mp4' : 'webm';
+                formData.append('file', currentInputData, `audio.${extension}`);
+            }
+            
+            formData.append('round_number', negotiationRound);
+            formData.append('selected_lang', selectedLang);
+            formData.append('negotiation_mode', currentMode);
+
             try {
                 const res = await fetch('/api/negotiate', { method: 'POST', body: formData });
                 const data = await res.json();
                 if (!res.ok) throw new Error(data.detail || 'Server error');
 
+                actionBtn.innerHTML = '<i class="fas fa-check-circle"></i> Negotiation Complete';
+                
                 const card = document.getElementById('outputCard');
                 card.classList.remove('hidden');
                 card.classList.remove('reveal');
@@ -361,6 +367,9 @@
                 if (data.status === "FAIR PRICE" || data.overcharge_pct <= 0) {
                     badge.className = 'px-3 py-1.5 text-[10px] uppercase tracking-widest font-extrabold rounded-lg bg-emerald-500/10 text-emerald-400 border-emerald-500/30 shadow-[0_0_15px_rgba(16,185,129,0.15)]';
                     badge.innerText = 'Fair Price';
+                } else if (data.status === "DELUSIONAL") {
+                    badge.className = 'px-3 py-1.5 text-[10px] uppercase tracking-widest font-extrabold rounded-lg bg-rose-600/20 text-rose-500 border-rose-500/50 shadow-[0_0_15px_rgba(244,63,94,0.3)]';
+                    badge.innerText = 'Delusional Price';
                 } else {
                     badge.className = 'px-3 py-1.5 text-[10px] uppercase tracking-widest font-extrabold rounded-lg bg-rose-500/10 text-rose-400 border-rose-500/30 shadow-[0_0_15px_rgba(244,63,94,0.15)]';
                     badge.innerText = `Overcharged +${data.overcharge_pct}%`;
@@ -369,22 +378,16 @@
                 if (data.tts_available && data.counter_audio_url) {
                     const playBtn = document.getElementById('playAudioBtn');
                     playBtn.classList.remove('hidden');
-                    playBtn.onclick = () => {
-                        currentAudio = new Audio(data.counter_audio_url);
-                        currentAudio.play();
-                    };
+                    playBtn.onclick = () => { currentAudio = new Audio(data.counter_audio_url); currentAudio.play(); };
                 }
 
                 if (data.whisper_tts_available && data.whisper_audio_url) {
                     const whisperBtn = document.getElementById('playWhisperBtn');
                     whisperBtn.classList.remove('hidden');
-                    whisperBtn.onclick = () => {
-                        currentAudio = new Audio(data.whisper_audio_url);
-                        currentAudio.play();
-                    };
+                    whisperBtn.onclick = () => { currentAudio = new Audio(data.whisper_audio_url); currentAudio.play(); };
                 }
 
-                if (data.status !== "FAIR PRICE" && data.overcharge_pct > 0) {
+                if (data.status !== "FAIR PRICE" && data.status !== "DELUSIONAL" && data.overcharge_pct > 0) {
                     document.getElementById('negotiateAgainBtn').classList.remove('hidden');
                 }
 
@@ -392,11 +395,56 @@
                 document.getElementById('errorMessage').innerText = `Error: ${err.message}`;
                 document.getElementById('errorArea').classList.remove('hidden');
                 document.getElementById('errorArea').classList.add('reveal');
+                
+                actionBtn.classList.remove('btn-dimmed');
+                actionBtn.classList.add('glow-btn');
+                actionBtn.innerHTML = originalText;
+                actionBtn.disabled = false;
             } finally {
                 status.innerText = 'Tap to Record';
                 status.classList.remove('text-amber-400');
                 document.getElementById('micIcon').className = 'fas fa-microphone text-slate-200 group-hover:text-white transition-colors duration-300';
             }
+        }
+
+        function negotiateAgain() {
+            if (!currentInputType || !currentInputData) return;
+            negotiationRound++;
+            
+            const actionBtn = document.getElementById('actionBtn');
+            actionBtn.classList.remove('glow-btn');
+            actionBtn.classList.add('btn-dimmed');
+            actionBtn.innerHTML = '<i class="fas fa-spinner animate-spin"></i> Compromising...';
+            actionBtn.disabled = true;
+
+            triggerNegotiation();
+        }
+
+        function resetApp() {
+            document.getElementById('textInput').value = '';
+            
+            currentInputType = null;
+            currentInputData = null;
+            negotiationRound = 1;
+            if (currentAudio) { currentAudio.pause(); currentAudio = null; }
+            
+            document.getElementById('outputCard').classList.add('hidden');
+            
+            document.getElementById('actionContainer').classList.add('hidden');
+            document.getElementById('actionContainer').classList.remove('flex');
+            
+            // Reset mode sub-menu
+            document.getElementById('unsureSubMenu').classList.add('hidden');
+            document.getElementById('unsureSubMenu').classList.remove('flex');
+            
+            const actionBtn = document.getElementById('actionBtn');
+            actionBtn.classList.remove('btn-dimmed');
+            actionBtn.classList.add('glow-btn');
+            actionBtn.innerHTML = 'Start Negotiation';
+            actionBtn.disabled = false;
+
+            document.getElementById('statusText').innerText = 'Tap to Record';
+            document.getElementById('statusText').classList.remove('text-amber-400', 'text-red-400');
         }
     </script>
 </body>
