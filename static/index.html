@@ -43,12 +43,12 @@
         select { appearance: none; background-image: url("data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%22292.4%22%20height%3D%22292.4%22%3E%3Cpath%20fill%3D%22%23cbd5e1%22%20d%3D%22M287%2069.4a17.6%2017.6%200%200%200-13-5.4H18.4c-5%200-9.3%201.8-12.9%205.4A17.6%2017.6%200%200%200%200%2082.2c0%205%201.8%209.3%205.4%2012.9l128%20127.9c3.6%203.6%207.8%205.4%2012.8%205.4s9.2-1.8%2012.8-5.4L287%2095c3.5-3.5%205.4-7.8%205.4-12.8%200-5-1.9-9.2-5.5-12.8z%22%2F%3E%3C%2Fsvg%3E"); background-repeat: no-repeat; background-position: right 0.7rem top 50%; background-size: 0.6em auto; }
     </style>
 </head>
-<body class="min-h-screen flex flex-col items-center justify-center p-4 selection:bg-amber-500/30">
+<body class="min-h-screen flex flex-col items-center justify-start md:justify-center p-4 selection:bg-amber-500/30">
 
     <div class="mesh-bg"></div>
     <div class="particles" id="particles"></div>
 
-    <main class="w-full max-w-[420px] mx-auto space-y-6 relative z-10">
+    <main class="w-full max-w-[420px] mx-auto space-y-4 sm:space-y-6 relative z-10 pb-8">
         
         <header class="text-center mb-8 reveal">
             <div class="inline-flex items-center justify-center p-3 mb-4">
@@ -85,7 +85,7 @@
             </div>
 
             <div class="flex flex-col gap-4 w-full">
-                <input type="text" id="textInput" onkeyup="checkInput()" onpaste="checkInput()" placeholder="e.g. Aloo 50 rupaye kilo hai..." class="w-full bg-black/40 border border-white/10 rounded-xl px-5 py-4 text-sm focus:outline-none focus:border-amber-500/50 text-slate-100 transition-all placeholder-slate-600 shadow-inner">
+                <input type="text" id="textInput" onkeyup="checkInput()" onpaste="checkInput()" placeholder="e.g. Aloo 50 rupaye kilo hai..." class="w-full bg-black/40 border border-white/10 rounded-xl px-5 py-4 text-base focus:outline-none focus:border-amber-500/50 text-slate-100 transition-all placeholder-slate-600 shadow-inner">
                 
                 <!-- Mode Selection & Action Buttons -->
                 <div id="actionContainer" class="hidden flex-col gap-3 mt-2 transition-all duration-500">
@@ -148,11 +148,11 @@
             </div>
 
             <div class="bg-black/20 border border-white/5 rounded-2xl p-4 flex items-start justify-between">
-                <div class="flex items-start space-x-3 pr-2">
+                <div class="flex items-start space-x-3 pr-2 w-full">
                     <div class="mt-0.5"><i class="fas fa-headset text-amber-500 text-sm"></i></div>
-                    <div>
+                    <div class="w-full">
                         <p class="text-[9px] font-bold text-slate-400 uppercase tracking-widest mb-1">Strategy</p>
-                        <p id="whisperAdvice" class="text-xs text-slate-300 leading-relaxed font-medium">...</p>
+                        <p id="whisperAdvice" class="text-xs text-slate-300 leading-relaxed font-medium break-words">...</p>
                     </div>
                 </div>
                 <button id="playWhisperBtn" class="hidden text-slate-300 hover:text-amber-400 transition-colors bg-white/5 hover:bg-white/10 p-2.5 rounded-full h-9 w-9 flex items-center justify-center flex-shrink-0 border border-white/10">
@@ -162,7 +162,7 @@
 
             <div class="bg-gradient-to-br from-white/5 to-transparent border border-white/10 rounded-2xl p-5 shadow-[inset_0_1px_0_rgba(255,255,255,0.05)]">
                 <p class="text-[9px] font-bold text-amber-500 uppercase tracking-widest mb-2 flex items-center gap-1.5"><i class="fas fa-bolt"></i> Speak Back</p>
-                <p id="speechScript" class="text-[15px] font-medium text-amber-50 italic mb-5 leading-relaxed drop-shadow-sm">"..."</p>
+                <p id="speechScript" class="text-[15px] font-medium text-amber-50 italic mb-5 leading-relaxed drop-shadow-sm break-words">"..."</p>
                 
                 <div class="flex gap-2.5">
                     <button id="playAudioBtn" class="hidden flex-1 bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold py-3 rounded-xl text-xs transition-all shadow-[0_0_20px_rgba(245,158,11,0.2)] flex items-center justify-center gap-2 active:scale-95">
