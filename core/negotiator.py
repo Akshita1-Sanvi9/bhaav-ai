@@ -56,19 +56,25 @@ def evaluate_dynamic_negotiation(transcript: str, forced_lang: str = "hinglish",
             CRITICAL RULES:
             1. The user's selected language is '{forced_lang}'. Write BOTH 'speech_script' and 'whisper_advice' strictly in this language.
             2. NEVER use the word "Unknown" or "अज्ञात" for the item name. If you don't know it, use "Saaman" (Hindi/Hinglish) or "Item" (English).
-            3. SCRIPT TONE: Speak like a real Indian street customer. Use casual slang (e.g., "Bhaiya", "Mehnga hai", "Final karo", "Aage dekhta hoon"). NEVER use formal words like "deal", "accept", "situation", or "budget" (unless using the specific budget tactic).
+            3. SCRIPT TONE: Speak like a real Indian street customer. Use casual slang.
             4. DO NOT use the word "offer" in the speech_script.
-            5. FOR HINGLISH: Keep English nouns (like shirt, laptop, phone) in English letters. It should read like: "Bhaiya, yeh shirt 500 ka hai, 300 me final karo."
-            6. FOR HINDI: Use pure Devanagari script. Do NOT use English letters.
-            7. FOR ENGLISH: Use pure English. Do NOT use Devanagari script.
+            5. FOR HINGLISH: Use Hinglish slang ("Bhaiya", "Mehnga hai", "Final karo", "Aage dekhta hoon"). Keep English nouns (like shirt, laptop, phone) in English letters. Example: "Bhaiya, yeh shirt 500 ka hai, 300 me final karo."
+            6. FOR HINDI: Use pure Devanagari script. Use Hindi slang ("भैया", "महंगा है", "फाइनल करो", "आगे देखता हूँ"). Example: "भैया, यह शर्ट 500 की है, 300 में फाइनल करो."
+            7. FOR ENGLISH: Use PURE English. DO NOT use ANY Hinglish words like "Bhaiya", "hai", "ka", "final karo". Use English equivalents: "Brother", "is", "too expensive", "make it final". Example: "Brother, this shirt is 500, make it 300 final."
+            8. FOR ENGLISH: Even if the item is Indian (chai, aloo, samosa), the SCRIPT must be in English. Say "Brother, the tea is 20, make it 15" NOT "Bhaiya, chai 20 ka hai".
 
             Analyze the transcript and determine:
             1. item_en: English name.
             2. item_hi: Hindi name.
             3. quoted_price: Integer (MUST be exactly {raw_number}).
-            4. fair_price: Realistic market value.
+            4. fair_price: Realistic market value for this item.
+               - USE YOUR OWN COMMON SENSE. A phone CANNOT cost ₹80. A laptop CANNOT cost ₹500. A car CANNOT cost ₹2,000. A chocolate CANNOT cost ₹1 Lakh.
+               - If the vendor's quote is completely impossible for that item (e.g., a phone for ₹80), you MUST set status to "DELUSIONAL".
+               - If the quote is realistic for a local street market (e.g., ₹100 for a backpack), set status to "OVERCHARGED" or "FAIR" and estimate a realistic fair price (e.g., ₹75).
+               - DO NOT force fair_price to be close to the quote if the item is high-value electronics.
             5. status: "FAIR", "OVERCHARGED", or "DELUSIONAL". 
-            6. counter_offer: MUST be lower than fair_price.
+            6. counter_offer: MUST be lower than BOTH fair_price AND quoted_price. 
+               - If the status is "DELUSIONAL", set counter_offer to exactly {raw_number}.
             
             7. speech_script: What the user should say to the vendor. 
                - The script MUST be a full, natural sentence (at least 12-15 words). 
@@ -125,15 +131,20 @@ def evaluate_dynamic_negotiation(transcript: str, forced_lang: str = "hinglish",
                 # 3. Strict Language Validation
                 if forced_lang == "hindi":
                     if re.search(r'[a-zA-Z]', speech_script) or re.search(r'[a-zA-Z]', whisper_advice):
+                        print("[FIX] LLM leaked English into Hindi. Forcing fallback.")
                         speech_script = ""
                         whisper_advice = ""
                 elif forced_lang == "english":
-                    hinglish_words = ["bhaiya", "hai", "ka", "ki", "ko", "me", "kar", "do", "rupaye", "zyada", "kam", "final"]
-                    if any(word in speech_script.lower().split() for word in hinglish_words) or re.search(r'[\u0900-\u097F]', speech_script) or re.search(r'[\u0900-\u097F]', whisper_advice):
+                    hinglish_pattern = r'\b(bhaiya|bhai|hai|hain|ka|ki|ko|mein|kar|karo|dega|rupaye|zyada|kam|mehnga|sasta|theek)\b'
+                    if re.search(hinglish_pattern, speech_script.lower()) or re.search(hinglish_pattern, whisper_advice.lower()) or re.search(r'[\u0900-\u097F]', speech_script) or re.search(r'[\u0900-\u097F]', whisper_advice):
+                        print("[FIX] LLM leaked Hindi/Hinglish into English. Forcing fallback.")
                         speech_script = ""
                         whisper_advice = ""
                 elif forced_lang == "hinglish":
-                    if not re.search(r'[a-zA-Z]', speech_script):
+                    # FIX: Reject pure English (missing Hindi words)
+                    hinglish_words = r'\b(bhaiya|bhai|hai|hain|ka|ki|ko|mein|kar|karo|dega|rupaye|zyada|kam|mehnga|sasta|theek|yaar|me)\b'
+                    if not re.search(hinglish_words, speech_script.lower()) or re.search(r'[\u0900-\u097F]', speech_script):
+                        print("[FIX] LLM used pure English/Hindi instead of Hinglish. Forcing fallback.")
                         speech_script = ""
                         whisper_advice = ""
 
@@ -154,20 +165,18 @@ def evaluate_dynamic_negotiation(transcript: str, forced_lang: str = "hinglish",
                  "detected_language": forced_lang
              }
 
-    # THE ULTIMATE DELUSIONAL GUARD
+    # THE ULTIMATE DELUSIONAL GUARD (LLM-driven, no hardcoded item lists)
     is_delusional = False
     
-    # If the quote is less than 10% of the fair price, it's a joke (e.g., Car for ₹200)
     if quoted < (fair * 0.1):
         is_delusional = True
         fair = max(quoted * 100, 100000) 
-        counter = fair
+        counter = quoted
     
-    # If the quote is way higher than fair (e.g., Toothbrush for ₹5 Lakhs)
     elif quoted > (fair * 5) and quoted > 1000:
         is_delusional = True
         fair = int(quoted * 0.05)
-        counter = fair
+        counter = quoted
         
     else:
         status = "OVERCHARGED" if quoted > fair else "FAIR"
@@ -182,21 +191,25 @@ def evaluate_dynamic_negotiation(transcript: str, forced_lang: str = "hinglish",
 
         if counter >= fair:
             counter = int(fair * 0.90)
+            
+        # FIX: If there is a gap, it's not a "FAIR" deal
+        if counter < quoted:
+            status = "OVERCHARGED"
 
     overcharge_pct = int(((quoted - fair) / fair) * 100) if fair > 0 and quoted > fair else 0
     item_display = f"{item_en} ({item_hi})" if forced_lang == "hindi" and item_en.lower() != item_hi.lower() else item_en
 
-    # 1. FORCE DELUSIONAL OVERRIDE (Completely ignores LLM text)
+    # 1. FORCE DELUSIONAL OVERRIDE
     if is_delusional:
         status = "DELUSIONAL"
         if forced_lang == "hindi":
-            whisper_advice = f"Quoted ₹{quoted}, Fair ₹{fair}. ये दाम पागलपन है, मत लो।"
+            whisper_advice = f"दुकानदार ₹{quoted} माँग रहा है, सही रेट ₹{fair} है। ये दाम पागलपन है, मत लो।"
             speech_script = f"भैया, ₹{quoted}? मज़ाक कर रहे हो क्या? ये तो ₹{fair} का मिलता है। मैं नहीं लूंगा।"
         elif forced_lang == "english":
             whisper_advice = f"Quoted ₹{quoted}, Fair ₹{fair}. This is absurd, walk away."
             speech_script = f"Brother, ₹{quoted}? Are you joking? This is worth around ₹{fair}. I'm not paying this."
         else:
-            whisper_advice = f"Quoted ₹{quoted}, Fair ₹{fair}. Yeh price toh mazaak hai, mat lo."
+            whisper_advice = f"Vendor ne ₹{quoted} bola, fair rate ₹{fair} hai. Yeh price toh mazaak hai, mat lo."
             speech_script = f"Bhaiya, ₹{quoted}? Mazaak kar rahe ho kya? Yeh toh ₹{fair} ka milta hai. Main nahi lunga."
 
     # 2. NORMAL FALLBACK
@@ -210,7 +223,7 @@ def evaluate_dynamic_negotiation(transcript: str, forced_lang: str = "hinglish",
                 speech_script = f"भैया, आपका सामान अच्छा है, लेकिन मेरा बजट सिर्फ ₹{counter} है। इसी में दे दो।"
             else:
                 speech_script = f"भैया, ₹{quoted} में तो बहुत मंहगा पड़ रहा है। चलो ₹{counter} में राउंड फिगर कर दो।"
-            whisper_advice = f"Quoted ₹{quoted}, Fair ₹{fair}. Counter ₹{counter}. बगल वाले से कम दाम माँगो।"
+            whisper_advice = f"दुकानदार ने ₹{quoted} बोला है, सही रेट ₹{fair} है। आप ₹{counter} में फाइनल करने की कोशिश करो।"
             
         elif forced_lang == "english":
             if tactic == "compare":
@@ -228,10 +241,16 @@ def evaluate_dynamic_negotiation(transcript: str, forced_lang: str = "hinglish",
                 speech_script = f"Bhaiya, saman achha hai, par mera budget sirf ₹{counter} hai. Isi me de do, aage bhi lenge."
             else:
                 speech_script = f"Bhaiya, ₹{quoted} thoda zyada lag raha hai. Chalo ₹{counter} me round figure kar do, abhi le jaata hoon."
-            whisper_advice = f"Quoted ₹{quoted}, Fair ₹{fair}. Counter ₹{counter}. Use comparison and be willing to walk away."
+            whisper_advice = f"Vendor ne ₹{quoted} bola, fair rate ₹{fair} hai. Aap ₹{counter} pe counter karo aur dukaan se nikalne ki taiyari rakho."
 
+    # 3. FIXED PREFIX (Consistent with selected language)
     if str(quoted) not in whisper_advice:
-        whisper_advice = f"Quoted ₹{quoted}, Fair ₹{fair}. " + whisper_advice
+        if forced_lang == "hindi":
+            whisper_advice = f"दुकानदार ₹{quoted} माँग रहा है, सही रेट ₹{fair} है। " + whisper_advice
+        elif forced_lang == "english":
+            whisper_advice = f"Quoted ₹{quoted}, Fair ₹{fair}. " + whisper_advice
+        else:
+            whisper_advice = f"Vendor ne ₹{quoted} bola, fair rate ₹{fair} hai. " + whisper_advice
 
     return {
         "transcript": transcript, "item": item_display, "quoted_price": quoted, "fair_price": fair,

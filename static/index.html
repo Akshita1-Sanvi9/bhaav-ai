@@ -402,7 +402,9 @@
                     whisperBtn.onclick = () => { currentAudio = new Audio(data.whisper_audio_url); currentAudio.play(); };
                 }
 
-                if (data.status !== "FAIR" && data.status !== "DELUSIONAL" && data.overcharge_pct > 0) {
+                // FIX: Show Compromise whenever there is mathematical room to negotiate.
+                // We ignore the LLM's status label ("FAIR") because sometimes Fair mode still has a gap.
+                if (data.status !== "DELUSIONAL" && data.counter_offer < data.quoted_price) {
                     document.getElementById('negotiateAgainBtn').classList.remove('hidden');
                 }
 

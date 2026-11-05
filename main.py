@@ -135,7 +135,8 @@ def process_negotiation(
         quoted = to_int(result.get("quoted_price"))
         fair = to_int(result.get("fair_price"))
         item = result.get("item", "Item")
-        lang = result.get("detected_language", "hinglish")
+        # Force the language to be strictly what the user selected in the UI
+        lang = selected_lang
         base_counter = to_int(result.get("counter_offer"))
 
         if quoted <= 0:
@@ -160,13 +161,13 @@ def process_negotiation(
             counter = base_counter
             status = "DELUSIONAL"
             if lang == "hindi":
-                whisper_advice = f"Quoted: ₹{quoted}, Fair: ₹{fair}. मज़ाक कर रहे हो क्या? मैं नहीं लूंगा।"
+                whisper_advice = f"दुकानदार ₹{quoted} माँग रहा है, सही रेट ₹{fair} है। ये दाम पागलपन है, मत लो।"
                 speech_script = "भैया, ये दाम तो पागलपन है। मैं नहीं लूंगा।"
             elif lang == "english":
-                whisper_advice = f"Quoted: ₹{quoted}, Fair: ₹{fair}. This is absurd. Walk away."
+                whisper_advice = f"Quoted ₹{quoted}, Fair ₹{fair}. This is absurd. Walk away."
                 speech_script = "Are you joking? I'm not paying this."
             else:
-                whisper_advice = f"Quoted: ₹{quoted}, Fair: ₹{fair}. Mazaak kar rahe ho kya? Main nahi lunga."
+                whisper_advice = f"Vendor ne ₹{quoted} bola, fair rate ₹{fair} hai. Mazaak kar rahe ho kya? Main nahi lunga."
                 speech_script = "Bhaiya, yeh toh mazaak hai. Main nahi lunga."
                 
         else:
@@ -209,13 +210,18 @@ def process_negotiation(
                     compromise_prompt = f"""You are Bhaav-AI, an expert Indian street negotiator. 
                     The vendor quoted ₹{quoted}. The fair price is ₹{fair}. 
                     We are in round {round_number} of negotiation. 
-                    The user's previous counter-offer was ₹{base_counter}. The user is now increasing their limit to ₹{counter}.
+                    
+                    FACTS:
+                    - The user's previous counter-offer was EXACTLY ₹{base_counter}.
+                    - The user is now increasing their limit to EXACTLY ₹{counter}.
                     
                     CRITICAL RULES:
                     1. The selected language is '{lang}'. Write the 'speech_script' and 'whisper_advice' strictly in '{lang}'.
                     2. Speak like a real Indian street customer. Use casual slang (e.g., "Bhaiya", "Mehnga hai", "Final karo"). NEVER use formal words like "agree", "accept", "deal", or "situation".
                     3. DO NOT use the word "offer".
-                    4. speech_script: MUST be a full, natural sentence (12-15 words). Frame it as: "I am increasing my price from {base_counter} to {counter} because I really want it, but {counter} is my absolute final limit."
+                    4. speech_script: MUST be a full, natural sentence (12-15 words). 
+                       - Frame it exactly as: "I am increasing my price from ₹{base_counter} to ₹{counter} because I really want it, but ₹{counter} is my absolute final limit."
+                       - DO NOT invent any other numbers. Use exactly {base_counter} and {counter}.
                     5. whisper_advice: Include the prices like "Quoted ₹{quoted}, Fair ₹{fair}, Counter ₹{counter}." Followed by a short strategy.
                     
                     Return ONLY a JSON object: {{"speech_script": "...", "whisper_advice": "..."}}"""
@@ -242,12 +248,14 @@ def process_negotiation(
                                 speech_script = ""
                                 whisper_advice = ""
                         elif lang == "english":
-                            hinglish_words = ["bhaiya", "hai", "ka", "ki", "ko", "me", "kar", "do", "rupaye", "zyada", "kam", "final"]
-                            if any(word in speech_script.lower().split() for word in hinglish_words) or re.search(r'[\u0900-\u097F]', speech_script) or re.search(r'[\u0900-\u097F]', whisper_advice):
+                            hinglish_pattern = r'\b(bhaiya|bhai|hai|hain|ka|ki|ko|mein|kar|karo|dega|rupaye|zyada|kam|mehnga|sasta|theek)\b'
+                            if re.search(hinglish_pattern, speech_script.lower()) or re.search(hinglish_pattern, whisper_advice.lower()) or re.search(r'[\u0900-\u097F]', speech_script) or re.search(r'[\u0900-\u097F]', whisper_advice):
                                 speech_script = ""
                                 whisper_advice = ""
                         elif lang == "hinglish":
-                            if not re.search(r'[a-zA-Z]', speech_script) or re.search(r'[\u0900-\u097F]', speech_script):
+                            # Reject pure English (missing Hindi words)
+                            hinglish_words = r'\b(bhaiya|bhai|hai|hain|ka|ki|ko|mein|kar|karo|dega|rupaye|zyada|kam|mehnga|sasta|theek|yaar|me)\b'
+                            if not re.search(hinglish_words, speech_script.lower()) or re.search(r'[\u0900-\u097F]', speech_script):
                                 speech_script = ""
                                 whisper_advice = ""
                                 
@@ -274,7 +282,7 @@ def process_negotiation(
                         speech_script = f"भैया, सच बता रहा हूँ, मेरा बजट सिर्फ ₹{counter} है। इसी में डील फाइनल कर दो।"
                     else:
                         speech_script = f"भैया, चलो ₹{counter} में फाइनल करते हैं। मैं अभी कैश देता हूँ, अंतिम दाम बताओ।"
-                    whisper_advice = f"Quoted ₹{quoted}, Fair ₹{fair}. Counter ₹{counter}. थोड़ा बढ़ा कर ₹{counter} बोलो।"
+                    whisper_advice = f"दुकानदार ₹{quoted} माँग रहा है, सही रेट ₹{fair} है। अब ₹{counter} बोलो।"
                     
                 else:
                     if tactic == "compare":
@@ -283,7 +291,15 @@ def process_negotiation(
                         speech_script = f"Bhaiya, sach batau toh mera budget sirf ₹{counter} hai. Isi me final kar do, abhi cash de dunga."
                     else:
                         speech_script = f"Bhaiya, chalo ₹{counter} me final kar do. Round figure banao aur saman pack kar do."
-                    whisper_advice = f"Quoted ₹{quoted}, Fair ₹{fair}. Counter ₹{counter}. Thoda badha ke {counter} bolo."
+                    whisper_advice = f"Vendor ne ₹{quoted} bola, fair rate ₹{fair} hai. Aap ₹{counter} pe final karne ki koshish karo."
+
+            # THE ULTIMATE STRATEGY LOCK: Overwrite whisper_advice in the selected language
+            if lang == "hindi":
+                whisper_advice = f"दुकानदार ₹{quoted} माँग रहा है, सही रेट ₹{fair} है। अब ₹{counter} बोलो और डटे रहो।"
+            elif lang == "english":
+                whisper_advice = f"Quoted ₹{quoted}, Fair ₹{fair}. Counter ₹{counter}. Be firm and stick to this final limit."
+            else:
+                whisper_advice = f"Vendor ne ₹{quoted} bola, fair rate ₹{fair} hai. Aap ₹{counter} pe final karne ki koshish karo."
 
         counter = min(quoted, counter)
         overcharge_pct = int(((quoted - fair) / fair) * 100) if fair > 0 and quoted > fair else 0
