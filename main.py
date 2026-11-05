@@ -95,6 +95,7 @@ def process_negotiation(
     round_number: int = Form(1),
     selected_lang: str = Form("hinglish"),
     negotiation_mode: str = Form("unsure"),
+    gender: str = Form("female"), 
     locked_quoted: int = Form(None),
     locked_fair: int = Form(None),
     locked_base_counter: int = Form(None)
@@ -130,7 +131,7 @@ def process_negotiation(
         if not transcript or not transcript.strip():
             raise HTTPException(status_code=400, detail="No speech detected.")
 
-        result = evaluate_dynamic_negotiation(transcript, forced_lang=selected_lang, mode=negotiation_mode)
+        result = evaluate_dynamic_negotiation(transcript, forced_lang=selected_lang, mode=negotiation_mode, gender=gender)
         
         quoted = to_int(result.get("quoted_price"))
         fair = to_int(result.get("fair_price"))
@@ -161,14 +162,16 @@ def process_negotiation(
             counter = base_counter
             status = "DELUSIONAL"
             if lang == "hindi":
+                lunga = "लूंगी" if gender == "female" else "लूंगा"
                 whisper_advice = f"दुकानदार ₹{quoted} माँग रहा है, सही रेट ₹{fair} है। ये दाम पागलपन है, मत लो।"
-                speech_script = "भैया, ये दाम तो पागलपन है। मैं नहीं लूंगा।"
+                speech_script = f"भैया, ये दाम तो पागलपन है। मैं नहीं {lunga}।"
             elif lang == "english":
                 whisper_advice = f"Quoted ₹{quoted}, Fair ₹{fair}. This is absurd. Walk away."
                 speech_script = "Are you joking? I'm not paying this."
             else:
-                whisper_advice = f"Vendor ne ₹{quoted} bola, fair rate ₹{fair} hai. Mazaak kar rahe ho kya? Main nahi lunga."
-                speech_script = "Bhaiya, yeh toh mazaak hai. Main nahi lunga."
+                lunga = "lungi" if gender == "female" else "lunga"
+                whisper_advice = f"Vendor ne ₹{quoted} bola, fair rate ₹{fair} hai. Mazaak kar rahe ho kya? Main nahi {lunga}."
+                speech_script = f"Bhaiya, yeh toh mazaak hai. Main nahi {lunga}."
                 
         else:
             # Compromise Rounds (2+)
@@ -223,6 +226,9 @@ def process_negotiation(
                        - Frame it exactly as: "I am increasing my price from ₹{base_counter} to ₹{counter} because I really want it, but ₹{counter} is my absolute final limit."
                        - DO NOT invent any other numbers. Use exactly {base_counter} and {counter}.
                     5. whisper_advice: Include the prices like "Quoted ₹{quoted}, Fair ₹{fair}, Counter ₹{counter}." Followed by a short strategy.
+                    6. GRAMMAR: The user's gender is '{gender}'. You MUST use '{gender}' grammar. 
+                       - For Hindi Female: Use "बोलूंगी", "करूंगी". For Hindi Male: Use "बोलूंगा", "करूंगा".
+                       - For Hinglish Female: Use "lungi", "dungi", "karungi". For Hinglish Male: Use "lunga", "dunga", "karunga".
                     
                     Return ONLY a JSON object: {{"speech_script": "...", "whisper_advice": "..."}}"""
                     
@@ -276,19 +282,26 @@ def process_negotiation(
                     whisper_advice = f"Quoted ₹{quoted}, Fair ₹{fair}. Counter ₹{counter}. Be firm and ready to walk away."
                     
                 elif lang == "hindi":
+                    chahta = "चाहती" if gender == "female" else "चाहता"
+                    bata_raha = "बता रही" if gender == "female" else "बता रहा"
+                    deta = "देती" if gender == "female" else "देता"
+                    
                     if tactic == "compare":
-                        speech_script = f"भैया, मैं सच में ये खरीदना चाहता हूँ, लेकिन बगल वाले ₹{counter} में दे रहे हैं। आप भी कम करो ना।"
+                        speech_script = f"भैया, मैं सच में ये खरीदना {chahta} हूँ, लेकिन बगल वाले ₹{counter} में दे रहे हैं। आप भी कम करो ना।"
                     elif tactic == "budget":
-                        speech_script = f"भैया, सच बता रहा हूँ, मेरा बजट सिर्फ ₹{counter} है। इसी में डील फाइनल कर दो।"
+                        speech_script = f"भैया, सच {bata_raha} हूँ, मेरा बजट सिर्फ ₹{counter} है। इसी में डील फाइनल कर दो।"
                     else:
-                        speech_script = f"भैया, चलो ₹{counter} में फाइनल करते हैं। मैं अभी कैश देता हूँ, अंतिम दाम बताओ।"
+                        speech_script = f"भैया, चलो ₹{counter} में फाइनल करते हैं। मैं अभी कैश {deta} हूँ, अंतिम दाम बताओ।"
                     whisper_advice = f"दुकानदार ₹{quoted} माँग रहा है, सही रेट ₹{fair} है। अब ₹{counter} बोलो।"
                     
                 else:
+                    chahta = "chahti" if gender == "female" else "chahta"
+                    dunga = "dungi" if gender == "female" else "dunga"
+                    
                     if tactic == "compare":
-                        speech_script = f"Bhaiya, main sach me yeh lena chahta hoon, par bagal wale ₹{counter} me de rahe hain. Aap bhi thoda adjust karo."
+                        speech_script = f"Bhaiya, main sach me yeh lena {chahta} hoon, par bagal wale ₹{counter} me de rahe hain. Aap bhi thoda adjust karo."
                     elif tactic == "budget":
-                        speech_script = f"Bhaiya, sach batau toh mera budget sirf ₹{counter} hai. Isi me final kar do, abhi cash de dunga."
+                        speech_script = f"Bhaiya, sach batau toh mera budget sirf ₹{counter} hai. Isi me final kar do, abhi cash {dunga}."
                     else:
                         speech_script = f"Bhaiya, chalo ₹{counter} me final kar do. Round figure banao aur saman pack kar do."
                     whisper_advice = f"Vendor ne ₹{quoted} bola, fair rate ₹{fair} hai. Aap ₹{counter} pe final karne ki koshish karo."
@@ -304,6 +317,10 @@ def process_negotiation(
         counter = min(quoted, counter)
         overcharge_pct = int(((quoted - fair) / fair) * 100) if fair > 0 and quoted > fair else 0
 
+        # --- TTS GENERATION ---
+        # Pick the voice based on the selected gender
+        selected_voice = config.MALE_VOICE if gender == "male" else config.FEMALE_VOICE
+        
         req_id = uuid.uuid4().hex
         counter_path = os.path.join(AUDIO_DIR, f"{req_id}_counter.wav")
         whisper_path = os.path.join(AUDIO_DIR, f"{req_id}_whisper.wav")
@@ -313,14 +330,25 @@ def process_negotiation(
         whisper_tts_available = False
 
         try:
-            if synthesize_speech(text=speech_script, output_path=counter_path, voice=config.DEFAULT_VOICE, lang_code=tts_lang):
-                tts_available = True
-        except Exception as e: print(f"[TTS Error]: {e}")
+            # Synthesize Speak Back
+            if synthesize_speech(text=speech_script, output_path=counter_path, voice=selected_voice, lang_code=tts_lang):
+                # Verify the file actually exists and has content (fixes silent failure)
+                if os.path.exists(counter_path) and os.path.getsize(counter_path) > 0:
+                    tts_available = True
+                else:
+                    print(f"[TTS WARNING] File created but empty: {counter_path}")
+        except Exception as e: 
+            print(f"[TTS Error - Counter]: {e}")
 
         try:
-            if synthesize_speech(text=whisper_advice, output_path=whisper_path, voice=config.DEFAULT_VOICE, lang_code=tts_lang):
-                whisper_tts_available = True
-        except Exception as e: print(f"[TTS Error]: {e}")
+            # Synthesize Strategy
+            if synthesize_speech(text=whisper_advice, output_path=whisper_path, voice=selected_voice, lang_code=tts_lang):
+                if os.path.exists(whisper_path) and os.path.getsize(whisper_path) > 0:
+                    whisper_tts_available = True
+                else:
+                    print(f"[TTS WARNING] File created but empty: {whisper_path}")
+        except Exception as e: 
+            print(f"[TTS Error - Whisper]: {e}")
 
         response_payload = {
             "transcript": transcript, "item": item, "quoted_price": quoted,

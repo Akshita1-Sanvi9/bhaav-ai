@@ -17,7 +17,7 @@ def extract_digits_only(text: str) -> int:
     numbers = [int(n) for n in re.findall(r'\d+', text)]
     return max(numbers) if numbers else 0
 
-def evaluate_dynamic_negotiation(transcript: str, forced_lang: str = "hinglish", mode: str = "unsure") -> dict:
+def evaluate_dynamic_negotiation(transcript: str, forced_lang: str = "hinglish", mode: str = "unsure", gender: str = "female") -> dict:
     api_key = os.getenv("GROQ_API_KEY")
     item_en = "Item"
     item_hi = "सामान"
@@ -31,7 +31,7 @@ def evaluate_dynamic_negotiation(transcript: str, forced_lang: str = "hinglish",
     # 1. Extract the raw number directly from the transcript FIRST.
     raw_number = extract_digits_only(transcript)
 
-    print(f"\n[DEBUG] INPUT: '{transcript}', MODE: {mode}, LANG: {forced_lang}, RAW_NUM: {raw_number}")
+    print(f"\n[DEBUG] INPUT: '{transcript}', MODE: {mode}, LANG: {forced_lang}, GENDER: {gender}, RAW_NUM: {raw_number}")
     
     if api_key:
         try:
@@ -62,6 +62,10 @@ def evaluate_dynamic_negotiation(transcript: str, forced_lang: str = "hinglish",
             6. FOR HINDI: Use pure Devanagari script. Use Hindi slang ("भैया", "महंगा है", "फाइनल करो", "आगे देखता हूँ"). Example: "भैया, यह शर्ट 500 की है, 300 में फाइनल करो."
             7. FOR ENGLISH: Use PURE English. DO NOT use ANY Hinglish words like "Bhaiya", "hai", "ka", "final karo". Use English equivalents: "Brother", "is", "too expensive", "make it final". Example: "Brother, this shirt is 500, make it 300 final."
             8. FOR ENGLISH: Even if the item is Indian (chai, aloo, samosa), the SCRIPT must be in English. Say "Brother, the tea is 20, make it 15" NOT "Bhaiya, chai 20 ka hai".
+            9. GRAMMAR: The user's gender is '{gender}'. You MUST use '{gender}' grammar. 
+               - For Hindi Female: Use "लूंगी", "दूंगी", "करूंगी". For Hindi Male: Use "लूंगा", "दूंगा", "करूंगा".
+               - For Hinglish Female: Use "lungi", "dungi", "karungi". For Hinglish Male: Use "lunga", "dunga", "karunga".
+               - For English: Use gender-neutral phrasing (e.g., "I'll pay", "I want").
 
             Analyze the transcript and determine:
             1. item_en: English name.
@@ -203,14 +207,16 @@ def evaluate_dynamic_negotiation(transcript: str, forced_lang: str = "hinglish",
     if is_delusional:
         status = "DELUSIONAL"
         if forced_lang == "hindi":
+            lunga = "लूंगी" if gender == "female" else "लूंगा"
             whisper_advice = f"दुकानदार ₹{quoted} माँग रहा है, सही रेट ₹{fair} है। ये दाम पागलपन है, मत लो।"
-            speech_script = f"भैया, ₹{quoted}? मज़ाक कर रहे हो क्या? ये तो ₹{fair} का मिलता है। मैं नहीं लूंगा।"
+            speech_script = f"भैया, ₹{quoted}? मज़ाक कर रहे हो क्या? ये तो ₹{fair} का मिलता है। मैं नहीं {lunga}।"
         elif forced_lang == "english":
             whisper_advice = f"Quoted ₹{quoted}, Fair ₹{fair}. This is absurd, walk away."
             speech_script = f"Brother, ₹{quoted}? Are you joking? This is worth around ₹{fair}. I'm not paying this."
         else:
+            lunga = "lungi" if gender == "female" else "lunga"
             whisper_advice = f"Vendor ne ₹{quoted} bola, fair rate ₹{fair} hai. Yeh price toh mazaak hai, mat lo."
-            speech_script = f"Bhaiya, ₹{quoted}? Mazaak kar rahe ho kya? Yeh toh ₹{fair} ka milta hai. Main nahi lunga."
+            speech_script = f"Bhaiya, ₹{quoted}? Mazaak kar rahe ho kya? Yeh toh ₹{fair} ka milta hai. Main nahi {lunga}."
 
     # 2. NORMAL FALLBACK
     elif not speech_script or "offer" in speech_script.lower() or not whisper_advice:
@@ -235,12 +241,13 @@ def evaluate_dynamic_negotiation(transcript: str, forced_lang: str = "hinglish",
             whisper_advice = f"Quoted ₹{quoted}, Fair ₹{fair}. Counter ₹{counter}. Be firm but polite."
             
         else:
+            jaata = "jaati" if gender == "female" else "jaata"
             if tactic == "compare":
                 speech_script = f"Bhaiya, yeh toh zyada lag raha hai. Maine bagal wali dukaan pe ₹{counter} me dekha hai. Thoda kam karo."
             elif tactic == "budget":
                 speech_script = f"Bhaiya, saman achha hai, par mera budget sirf ₹{counter} hai. Isi me de do, aage bhi lenge."
             else:
-                speech_script = f"Bhaiya, ₹{quoted} thoda zyada lag raha hai. Chalo ₹{counter} me round figure kar do, abhi le jaata hoon."
+                speech_script = f"Bhaiya, ₹{quoted} thoda zyada lag raha hai. Chalo ₹{counter} me round figure kar do, abhi le {jaata} hoon."
             whisper_advice = f"Vendor ne ₹{quoted} bola, fair rate ₹{fair} hai. Aap ₹{counter} pe counter karo aur dukaan se nikalne ki taiyari rakho."
 
     # 3. FIXED PREFIX (Consistent with selected language)

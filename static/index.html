@@ -64,11 +64,19 @@
                 <h2 class="text-[11px] font-bold text-slate-300 uppercase tracking-widest flex items-center gap-2">
                     <span class="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse"></span> Input Quote
                 </h2>
-                <select id="langSelect" class="bg-white/5 border border-white/10 text-slate-200 text-xs font-semibold rounded-lg pl-3 py-2 pr-8 focus:outline-none focus:border-amber-500/50 transition-colors cursor-pointer">
-                    <option value="hinglish">🗣️ Hinglish</option>
-                    <option value="english">🇬🇧 English</option>
-                    <option value="hindi">🇮🇳 Hindi</option>
-                </select>
+                
+                <!-- Gender & Language Dropdowns -->
+                <div class="flex gap-2">
+                    <select id="genderSelect" class="bg-white/5 border border-white/10 text-slate-200 text-xs font-semibold rounded-lg pl-3 py-2 pr-8 focus:outline-none focus:border-amber-500/50 transition-colors cursor-pointer">
+                        <option value="female">👩 Female</option>
+                        <option value="male">👨 Male</option>
+                    </select>
+                    <select id="langSelect" class="bg-white/5 border border-white/10 text-slate-200 text-xs font-semibold rounded-lg pl-3 py-2 pr-8 focus:outline-none focus:border-amber-500/50 transition-colors cursor-pointer">
+                        <option value="hinglish">🗣️ Hinglish</option>
+                        <option value="english">🇬🇧 English</option>
+                        <option value="hindi">🇮🇳 Hindi</option>
+                    </select>
+                </div>
             </div>
             
             <div class="flex justify-center mb-5 relative">
@@ -330,6 +338,7 @@
             }
 
             const selectedLang = document.getElementById('langSelect').value;
+            const selectedGender = document.getElementById('genderSelect').value;
             const formData = new FormData();
             
             if (currentInputType === 'text') {
@@ -342,6 +351,7 @@
             
             formData.append('round_number', negotiationRound);
             formData.append('selected_lang', selectedLang);
+            formData.append('gender', selectedGender); // ADDED GENDER
             formData.append('negotiation_mode', currentMode);
             
             // CRITICAL FIX: Send locked values if this is a compromise round

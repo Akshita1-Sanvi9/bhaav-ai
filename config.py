@@ -16,7 +16,11 @@ EVON_LLM_URL = os.getenv("EVON_LLM_URL", "")
 SAMPLE_RATE = 16000
 CHANNELS = 1
 
+# --- Voice Configuration ---
+FEMALE_VOICE = "Nalini"
+MALE_VOICE = "Vikrant"      # Male Hindi voice
+
 # Default Parameters
-DEFAULT_VOICE = "Nalini"
+DEFAULT_VOICE = FEMALE_VOICE
 DEFAULT_LANG = "hi-IN"
 DEFAULT_SPEED = 1.0
